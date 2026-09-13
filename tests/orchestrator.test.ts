@@ -19,6 +19,8 @@ describe("orchestrator", () => {
     expect(result.record.state).toBe("resolved");
     expect(result.record.transactionDecision).toBe("commit");
     expect(result.outcome?.route_acceptance).toBe("yes");
+    expect(result.record.transactionReceipt?.decision).toBe("commit");
+    expect(result.record.transactionReceipt?.decisionDigest).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("reuses a terminal result when the same incident is submitted again", async () => {

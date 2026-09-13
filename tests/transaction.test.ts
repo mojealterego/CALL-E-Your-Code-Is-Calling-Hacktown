@@ -7,13 +7,13 @@ describe("voice transaction reconciliation", () => {
     incidentId: "AF-0001",
     participantId: "driver-42",
     route: "B",
-    maxEtaMinutes: 1140,
+    maxEta: "19:00",
   });
 
   it("commits matching high-confidence evidence", () => {
     expect(reconcileTransaction(tx, {
       route: "B",
-      etaMinutes: 1100,
+      eta: "18:40",
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
@@ -23,7 +23,7 @@ describe("voice transaction reconciliation", () => {
   it("aborts when the participant proposes a conflicting route", () => {
     const result = reconcileTransaction(tx, {
       route: "C",
-      etaMinutes: 1100,
+      eta: "18:40",
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route C.",

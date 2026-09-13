@@ -9,9 +9,10 @@ describe("incident state machine", () => {
     expect(() => assertTransition("calling", "verifying")).not.toThrow();
     expect(() => assertTransition("verifying", "resolved")).not.toThrow();
     expect(() => assertTransition("calling", "recovering")).not.toThrow();
+    expect(() => assertTransition("recovering", "verifying")).not.toThrow();
   });
 
-  it("rejects terminal-state regression", () => {
+  it("rejects terminal-state regression and duplicate outbound execution", () => {
     expect(() => assertTransition("resolved", "calling")).toThrow(/Invalid incident transition/);
     expect(() => assertTransition("escalated", "validated")).toThrow(/Invalid incident transition/);
     expect(() => assertTransition("recovering", "calling")).toThrow(/Invalid incident transition/);

@@ -1,120 +1,41 @@
 export type EpistemicStatus = "true" | "false" | "unknown" | "unverified" | "contradicted" | "stale" | "verified";
 export type MemoryKind = "working" | "episodic" | "semantic" | "procedural" | "holographic";
 
-export interface Claim {
-  id: string;
-  subject: string;
-  predicate: string;
-  value: string;
-  status: EpistemicStatus;
-  source: "call-e" | "memory" | "policy" | "authoritative";
-  evidenceRefs: string[];
-  confidence: number;
-  validFrom: string;
-  validTo?: string;
-  recordedAt: string;
-}
+export interface Claim { id: string; subject: string; predicate: string; value: string; status: EpistemicStatus; source: "call-e" | "memory" | "policy" | "authoritative"; evidenceRefs: string[]; confidence: number; validFrom: string; validTo?: string; recordedAt: string; }
+export interface BitemporalFact<T = string> { factId: string; value: T; validFrom: string; validTo?: string; recordedAt: string; supersededAt?: string; version: number; source: string; }
+export interface MemoryItem { id: string; kind: MemoryKind; text: string; tags: string[]; recordedAt: string; validFrom: string; validTo?: string; }
+export interface ThoughtNode { id: string; hypothesis: string; dependsOn: string[]; supports: string[]; contradicts: string[]; score: number; }
+export interface AssuranceContext { claims: Claim[]; bitemporalFacts: BitemporalFact[]; retrievedMemory: MemoryItem[]; thoughts: ThoughtNode[]; }
 
-export interface BitemporalFact<T = string> {
-  factId: string;
-  value: T;
-  validFrom: string;
-  validTo?: string;
-  recordedAt: string;
-  supersededAt?: string;
-  version: number;
-  source: string;
-}
-
-export interface MemoryItem {
-  id: string;
-  kind: MemoryKind;
-  text: string;
-  tags: string[];
-  recordedAt: string;
-  validFrom: string;
-  validTo?: string;
-}
-
-export interface ThoughtNode {
-  id: string;
-  hypothesis: string;
-  dependsOn: string[];
-  supports: string[];
-  contradicts: string[];
-  score: number;
-}
-
-export interface AssuranceContext {
-  claims: Claim[];
-  bitemporalFacts: BitemporalFact[];
-  retrievedMemory: MemoryItem[];
-  thoughts: ThoughtNode[];
-}
-
-function normalize(value: string): string[] {
-  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").split(/\s+/).filter(Boolean);
-}
-
-function overlap(a: string, b: string): number {
-  const left = new Set(normalize(a));
-  const right = new Set(normalize(b));
-  if (!left.size || !right.size) return 0;
-  let common = 0;
-  for (const token of left) if (right.has(token)) common += 1;
-  return common / Math.max(left.size, right.size);
-}
+function normalize(value: string): string[] { return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").split(/\s+/).filter(Boolean); }
+function overlap(a: string, b: string): number { const left = new Set(normalize(a)); const right = new Set(normalize(b)); if (!left.size || !right.size) return 0; let common = 0; for (const token of left) if (right.has(token)) common += 1; return common / Math.max(left.size, right.size); }
 
 export function semanticRag(query: string, memory: MemoryItem[], limit = 5): MemoryItem[] {
-  return memory
-    .map((item) => ({ item, score: overlap(query, `${item.text} ${item.tags.join(" ")}`) }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((entry) => entry.item);
+  return memory.map((item) => ({ item, score: overlap(query, `${item.text} ${item.tags.join(" ")}`) })).filter((entry) => entry.score > 0).sort((a, b) => b.score - a.score).slice(0, limit).map((entry) => entry.item);
 }
 
-export function createClaim(input: Omit<Claim, "id" | "recordedAt">): Claim {
-  return { ...input, id: `claim_${Math.random().toString(36).slice(2, 10)}`, recordedAt: new Date().toISOString() };
-}
+export function createClaim(input: Omit<Claim, "id" | "recordedAt">): Claim { return { ...input, id: `claim_${Math.random().toString(36).slice(2, 10)}`, recordedAt: new Date().toISOString() }; }
 
 export function buildGoT(claims: Claim[]): ThoughtNode[] {
-  const nodes: ThoughtNode[] = claims.map((claim) => ({
-    id: `thought_${claim.id}`,
-    hypothesis: `${claim.subject}.${claim.predicate}=${claim.value}`,
-    dependsOn: claim.evidenceRefs,
-    supports: [],
-    contradicts: [],
-    score: claim.confidence,
-  }));
-
-  for (const left of nodes) {
-    for (const right of nodes) {
-      if (left.id === right.id) continue;
-      if (left.hypothesis.split("=")[0] === right.hypothesis.split("=")[0] && left.hypothesis !== right.hypothesis) {
-        left.contradicts.push(right.id);
-      }
-    }
+  const nodes: ThoughtNode[] = claims.map((claim) => ({ id: `thought_${claim.id}`, hypothesis: `${claim.subject}.${claim.predicate}=${claim.value}`, dependsOn: claim.evidenceRefs, supports: [], contradicts: [], score: claim.confidence }));
+  for (const left of nodes) for (const right of nodes) {
+    if (left.id === right.id) continue;
+    if (left.hypothesis.split("=")[0] === right.hypothesis.split("=")[0] && left.hypothesis !== right.hypothesis) left.contradicts.push(right.id);
   }
   return nodes;
 }
 
-export interface FormalGateResult {
-  allowed: boolean;
-  violations: string[];
-}
-
-/** Deterministic invariant gate. It is intentionally independent of model confidence. */
+export interface FormalGateResult { allowed: boolean; violations: string[]; }
 export function formalGate(input: {
   decision: "commit" | "abort" | "recover";
-  patientConfirmed?: string;
-  appointmentDecision?: string;
-  providerStatus?: string;
-  taskCompleted?: boolean;
-  conversationCompleted?: boolean;
-  evidenceItems?: string[];
-  selectedSlotPrepared?: boolean;
-  contradiction?: boolean;
+  patientConfirmed?: string | undefined;
+  appointmentDecision?: string | undefined;
+  providerStatus?: string | undefined;
+  taskCompleted?: boolean | undefined;
+  conversationCompleted?: boolean | undefined;
+  evidenceItems?: string[] | undefined;
+  selectedSlotPrepared?: boolean | undefined;
+  contradiction?: boolean | undefined;
 }): FormalGateResult {
   const violations: string[] = [];
   if (input.decision === "commit") {
@@ -134,11 +55,11 @@ export function buildAssuranceContext(input: {
   doctorName: string;
   appointmentDate: string;
   appointmentTime: string;
-  appointmentDecision?: string;
-  patientConfirmed?: string;
+  appointmentDecision?: string | undefined;
+  patientConfirmed?: string | undefined;
   evidenceSummary: string;
-  evidenceItems?: string[];
-  firstVisit?: string;
+  evidenceItems?: string[] | undefined;
+  firstVisit?: string | undefined;
 }): AssuranceContext {
   const now = new Date().toISOString();
   const memory: MemoryItem[] = [

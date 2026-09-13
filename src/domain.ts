@@ -1,3 +1,5 @@
+import type { TransactionReceipt } from "./receipt.js";
+
 export type IncidentState =
   | "detected"
   | "validated"
@@ -54,6 +56,7 @@ export interface CallRecord {
   transactionId?: string;
   transactionDecision?: "commit" | "abort" | "recover";
   transactionReasons?: string[];
+  transactionReceipt?: TransactionReceipt;
   previousAuditDigest?: string;
   auditDigest?: string;
 }

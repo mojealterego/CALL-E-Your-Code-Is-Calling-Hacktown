@@ -1,4 +1,4 @@
-import type { CallOutcome, CompletionConfidence } from "./domain.js";
+import type { CallOutcome, CompletionConfidence, AppointmentConfirmation } from "./domain.js";
 
 const ROUTE_ACCEPTANCE = new Set(["yes", "no", "unknown"]);
 const ESCALATION = new Set(["urgent", "normal", "none", "unknown"]);
@@ -16,15 +16,21 @@ function validateCompletionConfidence(value: unknown): CompletionConfidence | st
   return { ...(v.score !== undefined ? { score: v.score } : {}), ...(v.label !== undefined ? { label: v.label } : {}) };
 }
 
+function validateAppointmentField(value: unknown, key: string): AppointmentConfirmation {
+  if (!APPOINTMENT.has(String(value))) throw new Error(`Invalid ${key}`);
+  return value as AppointmentConfirmation;
+}
+
 export function validateOutcome(value: unknown): CallOutcome {
   if (!value || typeof value !== "object") throw new Error("CALL-E result must be an object");
   const v = value as Record<string, unknown>;
   const appointmentResult = v.patient_confirmed !== undefined || v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined || v.appointment_decision !== undefined;
   if (appointmentResult) {
-    for (const key of ["patient_confirmed", "appointment_confirmed", "first_visit"]) {
-      if (!APPOINTMENT.has(String(v[key]))) throw new Error(`Invalid ${key}`);
-    }
+    const patientConfirmed = validateAppointmentField(v.patient_confirmed, "patient_confirmed");
+    const appointmentConfirmed = validateAppointmentField(v.appointment_confirmed, "appointment_confirmed");
+    const firstVisit = validateAppointmentField(v.first_visit, "first_visit");
     if (typeof v.doctor_confirmed !== "string") throw new Error("Invalid doctor_confirmed");
+    const doctorConfirmed = v.doctor_confirmed;
     const booleanField = (key: string): boolean => {
       const field = v[key];
       if (typeof field !== "boolean") throw new Error(`Invalid ${key}`);
@@ -38,27 +44,32 @@ export function validateOutcome(value: unknown): CallOutcome {
     const rescheduleRequested = booleanField("reschedule_requested");
     const rescheduleCompleted = booleanField("reschedule_completed");
     if (!APPOINTMENT_DECISION.has(String(v.appointment_decision))) throw new Error("Invalid appointment_decision");
+    const appointmentDecision = v.appointment_decision as CallOutcome["appointment_decision"];
     if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
+    const newAppointmentDate = v.new_appointment_date;
+    const newAppointmentTime = v.new_appointment_time;
     if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
+    const evidenceSummary = v.evidence_summary;
     if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
+    const confidence = v.confidence as CallOutcome["confidence"];
     const completionConfidence = validateCompletionConfidence(v.completion_confidence);
     return {
       route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "none",
-      evidence_summary: v.evidence_summary, confidence: v.confidence as CallOutcome["confidence"],
-      patient_confirmed: v.patient_confirmed as CallOutcome["patient_confirmed"],
-      appointment_confirmed: v.appointment_confirmed as CallOutcome["appointment_confirmed"],
-      doctor_confirmed: v.doctor_confirmed,
-      first_visit: v.first_visit as CallOutcome["first_visit"],
+      evidence_summary: evidenceSummary, confidence,
+      patient_confirmed: patientConfirmed,
+      appointment_confirmed: appointmentConfirmed,
+      doctor_confirmed: doctorConfirmed,
+      first_visit: firstVisit,
       identity_document_reminder_given: identityDocumentReminderGiven,
       arrive_30_minutes_early: arrive30MinutesEarly,
       registration_reminder_given: registrationReminderGiven,
       information_form_reminder_given: informationFormReminderGiven,
       conversation_completed: conversationCompleted,
-      appointment_decision: v.appointment_decision as CallOutcome["appointment_decision"],
+      appointment_decision: appointmentDecision,
       reschedule_requested: rescheduleRequested,
       reschedule_completed: rescheduleCompleted,
-      new_appointment_date: v.new_appointment_date,
-      new_appointment_time: v.new_appointment_time,
+      new_appointment_date: newAppointmentDate,
+      new_appointment_time: newAppointmentTime,
       ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),
       ...(v.task_completed !== undefined ? { task_completed: v.task_completed as boolean } : {}),
       ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),

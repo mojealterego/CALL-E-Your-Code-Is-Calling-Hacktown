@@ -1,29 +1,124 @@
 # 3-Minute Judge Demo Script
 
-## 0:00–0:25 — The problem
+## 0:00–0:15 — The problem
 
-Show a dashboard/terminal with an A4 closure incident. Say: "A road closure turns a logistics decision into a phone-work problem. A dispatcher should not have to make dozens of calls just to restore the plan."
+Show the A4 closure incident.
 
-## 0:25–0:55 — Safety gate
+Say:
 
-Run `npm run demo`. Point out that the application validates the purpose, creates an operation identity, and stays in DRY-RUN mode. Emphasize: no phone call is possible in the default path.
+> "The hard part is not making an AI phone call. The hard part is deciding whether a phone conversation is enough evidence to change a real operational state."
 
-## 0:55–1:35 — Autonomous phone task boundary
+## 0:15–0:35 — PREPARE
 
-Show the architecture: incident → policy → CALL-E adapter → structured outcome → evidence gate. Explain that CALL-E is responsible for phone execution while AegisFleet owns the operational decision policy.
+Show:
 
-## 1:35–2:10 — Structured result
+```text
+Transaction: TX-AF-DEMO-0001
+Proposed route: B
+Maximum ETA: 19:00
+Participant: TRUCK-42
+```
 
-Show the JSON output. Highlight `route_acceptance`, `eta_update_time`, `escalation_needed`, `evidence_summary`, and `confidence`. Explain that `unknown` is a durable state, not an implicit `no`.
+Say:
 
-## 2:10–2:35 — Resilience
+> "AegisFleet freezes the exact operational intent before the phone call. This is the state we are prepared to commit — not whatever the agent happens to negotiate."
 
-Run `npm test`. Point to idempotency and orchestration tests. Explain that re-submitting the same incident reuses the logical operation rather than creating a second call identity.
+## 0:35–1:15 — CALL-E
 
-## 2:35–3:00 — Impact
+Run the explicitly configured live path with an authorized test recipient.
 
-Close with: "AegisFleet is a control plane for phone-based operations. It does not ask an AI to 'sound smart'; it asks the system to make one bounded real-world decision, with evidence, uncertainty and human escalation built into the boundary."
+Show the CALL-E call ID and the terminal result.
 
-## Live recording note
+Say:
 
-For a real CALL-E recording, replace the dry-run command with the explicitly configured live path and use a provisioned test recipient. Never place a real call to a person who has not been authorized for the demonstration.
+> "CALL-E owns the phone interaction. AegisFleet does not give the voice agent authority to change the business state."
+
+## 1:15–1:35 — EVIDENCE
+
+Show:
+
+```text
+route: B
+acceptance: yes
+ETA: 18:40
+confidence: high
+task_completed: true
+```
+
+Point out that terminal completion and evidence are separate from the structured business decision.
+
+## 1:35–1:50 — RECONCILE → COMMIT
+
+Show:
+
+```text
+prepared route B == observed route B
+18:40 <= 19:00
+acceptance = yes
+confidence = high
+task_completed = true
+
+DECISION: COMMIT
+```
+
+Say:
+
+> "Only now is the operational state allowed to change."
+
+## 1:50–2:15 — CONFLICT → ABORT
+
+Run the deterministic conflict fixture or show the test.
+
+```text
+prepared route: B
+observed route: C
+
+DECISION: ABORT
+reason: observed route does not match prepared route
+```
+
+Say:
+
+> "The driver can answer the phone and still disagree with the prepared transaction. The system refuses to commit."
+
+## 2:15–2:35 — UNKNOWN → RECOVER
+
+Show an incomplete or uncertain result.
+
+```text
+acceptance: unknown
+route: unknown
+CALL-E terminal evidence: incomplete
+
+DECISION: RECOVER
+```
+
+Say:
+
+> "Unknown is not success and it is not permission to make another call blindly. Recovery first reconciles the existing call."
+
+## 2:35–2:50 — AUDIT
+
+Show the transaction receipt and hash-linked audit digest.
+
+Point to:
+
+- transaction ID;
+- CALL-E call ID;
+- decision;
+- evidence;
+- previous audit digest;
+- current audit digest.
+
+## 2:50–3:00 — Closing line
+
+Say:
+
+> "CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change."
+
+## Recording safety
+
+- Use only an authorized test recipient.
+- Keep `CALLE_API_KEY` out of the recording and repository.
+- Use `CALL_E_MODE=live` only for the intended live demonstration.
+- The default `npm run demo` path remains provider-free and makes no phone call.

@@ -3,14 +3,15 @@ import type { CallOutcome, Incident } from "./domain.js";
 import { RESULT_SCHEMA } from "./domain.js";
 import { validateOutcome } from "./validation.js";
 
-function redactPhone(phone: string): string {
-  return phone.length < 5 ? "***" : `${phone.slice(0, 2)}***${phone.slice(-2)}`;
-}
-
 function extractStructuredResult(call: unknown): unknown {
   if (!call || typeof call !== "object") return undefined;
   const value = call as Record<string, unknown>;
-  return value.structuredResult ?? value.result;
+  return value.structured_result ?? value.structuredResult ?? value.result;
+}
+
+function stringField(value: Record<string, unknown>, ...keys: string[]): string | undefined {
+  for (const key of keys) if (typeof value[key] === "string") return value[key];
+  return undefined;
 }
 
 export async function executeWithCalle(
@@ -21,23 +22,50 @@ export async function executeWithCalle(
   if (!apiKey) throw new Error("CALLE_API_KEY is required for live mode");
 
   const client = new CalleClient({ apiKey });
+  const region = incident.region ?? process.env.CALLE_REGION ?? "US";
+  const locale = incident.locale ?? process.env.CALLE_LOCALE ?? "en-US";
   const task = [
-    incident.goal,
+    "Coordinate the prepared route change as a fact-finding call.",
     `Vehicle: ${incident.vehicleId}`,
     `Incident: ${incident.closure}`,
-    `Recipient: ${redactPhone(incident.phone)}`,
-    "State only facts established by the conversation.",
-    "Never invent an ETA, acceptance, evidence, or confidence.",
+    `Proposed route: ${incident.proposedRoute}`,
+    `Maximum acceptable ETA: ${incident.maxEta}`,
+    "Ask the recipient whether they accept exactly the proposed route and whether they can meet the maximum ETA.",
+    "Do not authorize any other route, price, contract, or operational commitment.",
+    "State only facts established by the conversation. Never invent an ETA, acceptance, evidence, or confidence.",
   ].join("\n");
 
   const call = await client.calls.createAndWait({
     task,
+    recipients: [{ phones: [incident.phone], region, locale }],
     resultSchema: RESULT_SCHEMA,
     metadata: { aegisfleet_operation_key: idempotencyKey },
-  });
+  }, { idempotencyKey });
 
-  const structured = extractStructuredResult(call);
-  const outcome = validateOutcome(structured);
   const callValue = call as unknown as Record<string, unknown>;
-  return { callId: typeof callValue.id === "string" ? callValue.id : undefined, outcome };
+  const structured = extractStructuredResult(call);
+  const rawOutcome = structured && typeof structured === "object"
+    ? { ...(structured as Record<string, unknown>),
+        task_completed: callValue.task_completed,
+        completion_confidence: callValue.completion_confidence,
+        failure_code: callValue.failure_code,
+        failure_message: callValue.failure_message }
+    : {
+        route: "",
+        route_acceptance: "unknown",
+        eta_update_time: "",
+        escalation_needed: "urgent",
+        evidence_summary: stringField(callValue, "failure_message", "failureMessage") ?? "CALL-E returned no structured result",
+        confidence: "unknown",
+        task_completed: callValue.task_completed,
+        completion_confidence: callValue.completion_confidence,
+        failure_code: callValue.failure_code,
+        failure_message: callValue.failure_message,
+      };
+
+  const outcome = validateOutcome(rawOutcome);
+  return {
+    callId: stringField(callValue, "id", "call_id", "callId"),
+    outcome,
+  };
 }

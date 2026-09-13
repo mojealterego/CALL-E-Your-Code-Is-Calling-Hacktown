@@ -4,7 +4,7 @@ import { AuditLedger } from "./ledger.js";
 import { simulateCall } from "./simulator.js";
 import { executeWithCalle } from "./calle.js";
 import { validateOutcome } from "./validation.js";
-import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointmentTransaction, reconcileTransaction } from "./transaction.js";
+import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointmentTransaction, reconcileTransaction, type PreparedAppointmentTransaction, type PreparedTransaction } from "./transaction.js";
 import { createTransactionReceipt } from "./receipt.js";
 import { createCallCapability } from "./capability.js";
 
@@ -25,9 +25,10 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
   }
   ledger.transition(operationKey, "validated");
 
-  const isAppointment = incident.appointment !== undefined;
+  const appointment = incident.appointment;
+  const isAppointment = appointment !== undefined;
   const transaction = isAppointment
-    ? prepareAppointmentTransaction({ transactionId: `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: incident.appointment })
+    ? prepareAppointmentTransaction({ transactionId: `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: appointment })
     : prepareTransaction({ transactionId: `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, route: incident.proposedRoute, maxEta: incident.maxEta });
   ledger.transition(operationKey, "prepared", { transactionId: transaction.transactionId });
 
@@ -71,8 +72,8 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
       ...(outcome.new_appointment_time !== undefined ? { newAppointmentTime: outcome.new_appointment_time } : {}),
     };
     const reconciliation = isAppointment
-      ? reconcileAppointmentTransaction(transaction, observedEvidence)
-      : reconcileTransaction(transaction, observedEvidence);
+      ? reconcileAppointmentTransaction(transaction as PreparedAppointmentTransaction, observedEvidence)
+      : reconcileTransaction(transaction as PreparedTransaction, observedEvidence);
     const receipt = createTransactionReceipt({ transactionId: transaction.transactionId, transaction: { ...transaction, capability }, evidence: observedEvidence, decision: reconciliation.decision });
     const state = reconciliation.decision === "commit" ? "resolved" : reconciliation.decision === "recover" ? "recovering" : "escalated";
     const record = ledger.transition(operationKey, state, { transactionDecision: reconciliation.decision, transactionReasons: reconciliation.reasons, transactionReceipt: receipt });

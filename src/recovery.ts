@@ -110,19 +110,13 @@ export async function recoverIncident(
     : reconciliation.decision === "abort"
       ? "escalated"
       : "recovering";
-  const record = state === "recovering"
-    ? ledger.transition(operationKey, state, {
-        outcome: authoritative.outcome,
-        transactionDecision: reconciliation.decision,
-        transactionReasons: reconciliation.reasons,
-        transactionReceipt: receipt,
-      })
-    : ledger.transition(operationKey, state, {
-        outcome: authoritative.outcome,
-        transactionDecision: reconciliation.decision,
-        transactionReasons: reconciliation.reasons,
-        transactionReceipt: receipt,
-      });
+
+  const record = ledger.transition(operationKey, state, {
+    outcome: authoritative.outcome,
+    transactionDecision: reconciliation.decision,
+    transactionReasons: reconciliation.reasons,
+    transactionReceipt: receipt,
+  });
 
   return { record, authoritative, transaction, evidence, reconciliation, receipt };
 }

@@ -22,15 +22,17 @@ A language model never directly controls the consequential state transition.
 2. **Policy gate** — validates identity, E.164 phone format, purpose and live-call restrictions.
 3. **Idempotency reservation** — assigns a stable logical operation key before provider I/O.
 4. **Prepare** — freezes the transaction ID, proposed route and maximum ETA.
-5. **Provider execution** — dry-run simulation or CALL-E server SDK.
-6. **Terminal verification** — require successful CALL-E completion before accepting evidence as a commit candidate.
-7. **Evidence extraction** — retain structured result, terminal completion state and provider evidence.
-8. **Reconciliation** — compare observed route, acceptance and ETA against the prepared transaction.
-9. **Disposition**:
+5. **Authorize** — creates a short-lived capability bound to the participant, endpoint and exact transaction constraints.
+6. **Provider execution** — dry-run simulation or CALL-E server SDK.
+7. **Terminal verification** — require successful CALL-E completion before accepting evidence as a commit candidate.
+8. **Evidence extraction** — retain structured result, terminal completion state and provider evidence.
+9. **Reconciliation** — compare observed route, acceptance and ETA against the prepared transaction.
+10. **Disposition**:
    - `commit` when all constraints match;
    - `abort` when terminal evidence conflicts with the prepared transaction;
    - `recover` when execution/evidence is incomplete or uncertain.
-10. **Audit** — every transition is recorded in append-only hash-linked history.
+11. **Authoritative recovery** — re-fetch an existing CALL-E call by ID and resume verification without placing a second outbound call.
+12. **Audit** — every transition is recorded in append-only hash-linked history.
 
 ## Transaction boundary
 
@@ -47,6 +49,12 @@ Terminal evidence
   Reconciliation
    /      |      \
 COMMIT   ABORT   RECOVER
+                 │
+                 ▼
+        authoritative re-fetch
+                 │
+                 ▼
+             VERIFY
 ```
 
 The call itself is never the commit boundary.
@@ -59,9 +67,23 @@ The differentiator is not outbound calling. It is the **decision boundary around
 - the provider result cannot directly mutate business state;
 - a conflicting answer produces `abort` rather than an implicit success;
 - `unknown` or incomplete execution produces `recover` rather than a blind retry;
+- recovery re-fetches the existing provider call instead of initiating another call;
 - provider idempotency prevents duplicate logical calls during network retries;
 - dry-run and live execution use the same business reconciliation pipeline;
 - provider-specific behavior is isolated behind `src/calle.ts`.
+
+## Trust plane
+
+A phone number is an execution endpoint, not a complete participant identity or authorization grant.
+
+```text
+WHO   = participant
+WHERE = authorized phone endpoint
+WHAT  = transaction-scoped capability
+TTL   = bounded authorization lifetime
+```
+
+The capability is non-secret and short-lived. It is bound to the operation, participant, endpoint and exact prepared constraints. It is not presented as proof of human identity or voice biometric authentication.
 
 ## CALL-E integration
 
@@ -80,7 +102,7 @@ The terminal result provides the structured result together with `task_completed
 
 CALL-E terminal webhooks are notifications, not the authoritative business state. The current provider contract uses an event envelope with a top-level event ID and call-task ID in the event data. The `CALL-E-Event-Id` header must match the event ID; duplicate event IDs are rejected.
 
-The production recovery path should re-fetch the authoritative call task using the CALL-E API before changing transaction state. A webhook alone must never cause a downstream write.
+The prototype recovery path re-fetches the authoritative call task through the CALL-E API before changing a recovering transaction back into verification. A webhook alone never causes a downstream write.
 
 ## MCP / API relationship
 

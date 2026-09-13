@@ -19,6 +19,12 @@ Patient: Adam Miauczyński
 Doctor: doktor Pawlak
 Current appointment: 2026-09-14 10:00
 Purpose: appointment confirmation / reschedule / cancellation
+Prepared replacement slots:
+  2026-09-15 09:00
+  2026-09-15 11:30
+  2026-09-16 08:30
+  2026-09-16 13:00
+  2026-09-17 10:30
 ```
 
 Say:
@@ -76,19 +82,17 @@ Adam: "Nie."
 ```text
 Adam: "Nie, jutro nie przyjdę."
 
-"Rozumiem. Czy chciałby pan przełożyć wizytę na inny termin, czy nie chce pan już tej wizyty?"
+"Rozumiem. W takim razie mogę sprawdzić najbliższy wolny termin."
 
-Adam: "Chciałbym przełożyć."
-
-"W takim razie najbliższy wolny termin mam 15 września o 9:00. Czy ten termin panu odpowiada?"
+"Najbliższy wolny termin mam 15 września o 9:00. Czy ten termin panu odpowiada?"
 
 Adam: "Nie, godzina mi nie pasuje."
 
-"Rozumiem. A czy 15 września jako dzień panu odpowiada?"
+"Rozumiem. A sam dzień panu odpowiada, tylko godzina nie?"
 
 Adam: "Tak, dzień mi pasuje."
 
-"W takim razie, która godzina tego dnia by panu odpowiadała?"
+"Która godzina byłaby dla pana dogodna?"
 
 Adam: "11:30."
 
@@ -112,6 +116,7 @@ No reschedule slots are offered after an explicit cancellation.
 Show the structured result for the observed branch. For a first visit confirmation it contains:
 
 ```text
+patient_confirmed: yes
 appointment_confirmed: yes
 doctor_confirmed: doktor Pawlak
 first_visit: yes
@@ -207,6 +212,7 @@ Point to:
 
 - transaction ID;
 - CALL-E call ID;
+- patient identity evidence;
 - appointment evidence;
 - selected replacement slot, if any;
 - decision;

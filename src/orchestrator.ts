@@ -61,7 +61,13 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
       ...(outcome.identity_document_reminder_given !== undefined ? { identityDocumentReminderGiven: outcome.identity_document_reminder_given } : {}),
       ...(outcome.arrive_30_minutes_early !== undefined ? { arrive30MinutesEarly: outcome.arrive_30_minutes_early } : {}),
       ...(outcome.registration_reminder_given !== undefined ? { registrationReminderGiven: outcome.registration_reminder_given } : {}),
+      ...(outcome.information_form_reminder_given !== undefined ? { informationFormReminderGiven: outcome.information_form_reminder_given } : {}),
       ...(outcome.conversation_completed !== undefined ? { conversationCompleted: outcome.conversation_completed } : {}),
+      ...(outcome.appointment_decision !== undefined ? { appointmentDecision: outcome.appointment_decision } : {}),
+      ...(outcome.reschedule_requested !== undefined ? { rescheduleRequested: outcome.reschedule_requested } : {}),
+      ...(outcome.reschedule_completed !== undefined ? { rescheduleCompleted: outcome.reschedule_completed } : {}),
+      ...(outcome.new_appointment_date !== undefined ? { newAppointmentDate: outcome.new_appointment_date } : {}),
+      ...(outcome.new_appointment_time !== undefined ? { newAppointmentTime: outcome.new_appointment_time } : {}),
     };
     const reconciliation = isAppointment
       ? reconcileAppointmentTransaction(transaction, observedEvidence)

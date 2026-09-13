@@ -2,11 +2,11 @@
 
 ## 0:00–0:15 — The problem
 
-Show the A4 closure incident.
+Show the appointment-confirmation scenario.
 
 Say:
 
-> "The hard part is not making an AI phone call. The hard part is deciding whether a phone conversation is enough evidence to change a real operational state."
+> "The hard part is not making an AI phone call. The hard part is deciding whether a phone conversation is enough evidence to change a real-world state."
 
 ## 0:15–0:35 — PREPARE
 
@@ -14,80 +14,102 @@ Show:
 
 ```text
 Transaction: TX-AF-DEMO-0001
-Proposed route: B
-Maximum ETA: 19:00
-Participant: TRUCK-42
+Clinic: Przychodnia Medica Nova
+Patient: Adam Miauczyński
+Doctor: doktor Pawlak
+Purpose: appointment confirmation
 ```
 
 Say:
 
-> "AegisFleet freezes the exact operational intent before the phone call. This is the state we are prepared to commit — not whatever the agent happens to negotiate."
+> "AegisFleet freezes the exact appointment intent before the phone call. The voice agent can collect evidence, but it does not get authority to invent or change the appointment."
 
-## 0:35–1:15 — CALL-E
+## 0:35–1:30 — CALL-E
 
 Run the explicitly configured live path with an authorized test recipient.
 
-Show the CALL-E call ID and the terminal result.
+The agent should conduct a natural Polish receptionist-style conversation:
+
+```text
+"Dzień dobry, Anna z Przychodni Medica Nova. Czy rozmawiam z panem Adamem Miauczyńskim?"
+
+"Dzwonię w sprawie jutrzejszej wizyty. Chciałam tylko potwierdzić, czy będzie pan na wizycie u doktora Pawlaka?"
+
+"Czy będzie to pana pierwsza wizyta w naszej przychodni?"
+
+[first visit]
+"W takim razie chciałam jeszcze przypomnieć, żeby zabrać ze sobą dowód osobisty lub inny dokument potwierdzający tożsamość. Proszę też przyjść około 30 minut przed wizytą, żeby spokojnie zgłosić się w rejestracji i wypełnić formularz informacyjny, ponieważ jest to pana pierwsza wizyta."
+
+"Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?"
+
+[no questions]
+"W takim razie wizytę mamy potwierdzoną. Dziękuję za rozmowę i życzę miłego dnia."
+```
 
 Say:
 
 > "CALL-E owns the phone interaction. AegisFleet does not give the voice agent authority to change the business state."
 
-## 1:15–1:35 — EVIDENCE
+## 1:30–1:50 — EVIDENCE
 
 Show:
 
 ```text
-route: B
-acceptance: yes
-ETA: 18:40
+appointment_confirmed: yes
+doctor_confirmed: doktor Pawlak
+first_visit: yes
+identity_document_reminder_given: true
+arrive_30_minutes_early: true
+registration_reminder_given: true
+conversation_completed: true
 confidence: high
-task_completed: true
 ```
 
-Point out that terminal completion and evidence are separate from the structured business decision.
+Point out that the spoken conversation is converted into explicit, auditable evidence.
 
-## 1:35–1:50 — RECONCILE → COMMIT
+## 1:50–2:05 — RECONCILE → COMMIT
 
 Show:
 
 ```text
-prepared route B == observed route B
-18:40 <= 19:00
-acceptance = yes
+prepared patient == observed patient
+prepared doctor == observed doctor
+appointment_confirmed = yes
+first_visit instructions satisfied
+conversation_completed = true
 confidence = high
-task_completed = true
 
+authoritative terminal evidence
+        ↓
 DECISION: COMMIT
 ```
 
 Say:
 
-> "Only now is the operational state allowed to change."
+> "Only now is the appointment state allowed to change."
 
-## 1:50–2:15 — CONFLICT → ABORT
+## 2:05–2:25 — CONFLICT → ABORT
 
-Run the deterministic conflict fixture or show the test.
+Show a deterministic conflict fixture:
 
 ```text
-prepared route: B
-observed route: C
+prepared doctor: doktor Pawlak
+observed doctor: doktor Nowak
 
 DECISION: ABORT
-reason: observed route does not match prepared route
+reason: confirmed doctor does not match prepared appointment
 ```
 
 Say:
 
-> "The driver can answer the phone and still disagree with the prepared transaction. The system refuses to commit."
+> "A confident conversation is still not enough if the evidence conflicts with what was prepared."
 
-## 2:15–2:35 — UNKNOWN → RECOVER
+## 2:25–2:45 — UNKNOWN → RECOVER
 
-Show an incomplete or uncertain result.
+Show an incomplete result:
 
 ```text
-acceptance: unknown
-route: unknown
+appointment_confirmed: unknown
 CALL-E terminal evidence: incomplete
 
 DECISION: RECOVER
@@ -95,9 +117,9 @@ DECISION: RECOVER
 
 Say:
 
-> "Unknown is not success and it is not permission to make another call blindly. Recovery first reconciles the existing call."
+> "Unknown is not success and it is not permission to blindly place another call. Recovery first reconciles the existing call."
 
-## 2:35–2:50 — AUDIT
+## 2:45–3:00 — AUDIT + closing
 
 Show the transaction receipt and hash-linked audit digest.
 
@@ -105,12 +127,10 @@ Point to:
 
 - transaction ID;
 - CALL-E call ID;
+- appointment evidence;
 - decision;
-- evidence;
 - previous audit digest;
 - current audit digest.
-
-## 2:50–3:00 — Closing line
 
 Say:
 

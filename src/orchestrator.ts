@@ -67,6 +67,7 @@ export async function runIncident(
       acceptance: outcome.route_acceptance,
       confidence: outcome.confidence,
       evidenceSummary: outcome.evidence_summary,
+      evidenceItems: outcome.evidence,
       taskCompleted: outcome.task_completed,
       completionConfidence: outcome.completion_confidence,
     });

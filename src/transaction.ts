@@ -32,7 +32,10 @@ export interface ReconciliationResult {
 
 function clockToMinutes(value: string): number | undefined {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return undefined;
-  const [hours, minutes] = value.split(":").map(Number);
+  const parts = value.split(":");
+  const hours = Number(parts[0]);
+  const minutes = Number(parts[1]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return undefined;
   return hours * 60 + minutes;
 }
 

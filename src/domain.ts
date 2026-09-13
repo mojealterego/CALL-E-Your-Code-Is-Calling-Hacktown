@@ -19,6 +19,8 @@ export interface Incident {
   closure: string;
   requestedBy: string;
   goal: string;
+  proposedRoute: string;
+  maxEta: string;
   region?: string;
   locale?: string;
 }

@@ -17,6 +17,7 @@ describe("voice transaction reconciliation", () => {
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+      taskCompleted: true,
     }).decision).toBe("commit");
   });
 
@@ -27,6 +28,7 @@ describe("voice transaction reconciliation", () => {
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route C.",
+      taskCompleted: true,
     });
     expect(result.decision).toBe("abort");
     expect(result.reasons).toContain("observed route does not match prepared route");
@@ -39,5 +41,18 @@ describe("voice transaction reconciliation", () => {
       evidenceSummary: "Call state could not establish the route.",
     });
     expect(result.decision).toBe("recover");
+  });
+
+  it("aborts a failed CALL-E task even when the conversation appears to match", () => {
+    const result = reconcileTransaction(tx, {
+      route: "B",
+      eta: "18:40",
+      acceptance: "yes",
+      confidence: "high",
+      evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+      taskCompleted: false,
+    });
+    expect(result.decision).toBe("abort");
+    expect(result.reasons).toContain("CALL-E task did not complete successfully");
   });
 });

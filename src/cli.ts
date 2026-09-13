@@ -19,12 +19,21 @@ const liveAppointmentIncident: Incident = {
   vehicleId: "PATIENT-ADAM-MIAUCZYNSKI",
   closure: "Administrative appointment confirmation.",
   requestedBy: "clinic-reception-demo",
-  goal: "Confirm the patient's appointment and provide first-visit administrative instructions.",
+  goal: "Confirm Adam Miauczyński's appointment, handle attendance or cancellation, and reschedule it when requested using only prepared availability.",
   appointment: {
     clinicName: "Przychodnia Medica Nova",
     patientName: "Adam Miauczyński",
     doctorName: "doktor Pawlak",
     appointmentReference: "TOMORROW-APPOINTMENT-001",
+    appointmentDate: "2026-09-14",
+    appointmentTime: "10:00",
+    availableSlots: [
+      { date: "2026-09-15", time: "09:00" },
+      { date: "2026-09-15", time: "11:30" },
+      { date: "2026-09-16", time: "08:30" },
+      { date: "2026-09-16", time: "13:00" },
+      { date: "2026-09-17", time: "10:30" },
+    ],
   },
 };
 
@@ -52,6 +61,8 @@ async function main() {
   if (incident.appointment) {
     console.log(`APPOINTMENT clinic=${incident.appointment.clinicName} doctor=${incident.appointment.doctorName}`);
     console.log(`PATIENT ${incident.appointment.patientName}`);
+    console.log(`CURRENT ${incident.appointment.appointmentDate} ${incident.appointment.appointmentTime}`);
+    console.log(`AVAILABLE ${incident.appointment.availableSlots.map((slot) => `${slot.date} ${slot.time}`).join(", ")}`);
   } else {
     console.log(`Incident=${incident.id} vehicle=${incident.vehicleId}`);
     console.log(`PREPARE route=${incident.proposedRoute} maxEta=${incident.maxEta}`);

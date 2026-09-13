@@ -59,8 +59,9 @@ export function createEvolutionCandidate(input: { hypothesis: string; failures: 
 export function negotiatePreparedSlot(input: { requestedDate?: string; requestedTime?: string; availableSlots: AppointmentSlot[]; }): { status: "match" | "alternatives" | "none"; selected?: AppointmentSlot; alternatives: AppointmentSlot[] } {
   const matches = input.availableSlots.filter((slot) => (!input.requestedDate || slot.date === input.requestedDate) && (!input.requestedTime || slot.time === input.requestedTime));
   if (matches.length > 0) {
-    const [selected, ...alternatives] = matches;
-    return { status: "match", selected, alternatives };
+    const selected = matches[0];
+    if (!selected) throw new Error("Invariant violation: matched appointment slot missing");
+    return { status: "match", selected, alternatives: matches.slice(1) };
   }
   const alternatives = input.availableSlots.filter((slot) => !input.requestedDate || slot.date === input.requestedDate).slice(0, 3);
   return alternatives.length > 0 ? { status: "alternatives", alternatives } : { status: "none", alternatives: [] };

@@ -56,5 +56,13 @@ export function evaluatePromotion(shadow: ShadowComparison | undefined, challeng
 export function buildSystemStateManifest(input: Omit<SystemStateManifest, "generatedAt">): SystemStateManifest { return { ...input, generatedAt: new Date().toISOString() }; }
 export function rememberFailure(failures: FailureEvent[], event: FailureEvent): FailureEvent[] { return [...failures, event].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index); }
 export function createEvolutionCandidate(input: { hypothesis: string; failures: FailureEvent[]; counterfactuals: CounterfactualResult[]; challenger: ChallengerResult; shadow?: ShadowComparison; }): EvolutionCandidate { return { hypothesis: input.hypothesis, failureIds: input.failures.map((failure) => failure.id), counterfactuals: input.counterfactuals, challenger: input.challenger, ...(input.shadow ? { shadow: input.shadow } : {}), promotion: evaluatePromotion(input.shadow, input.challenger.passed, input.counterfactuals), authorizationRequired: true }; }
-export function negotiatePreparedSlot(input: { requestedDate?: string; requestedTime?: string; availableSlots: AppointmentSlot[]; }): { status: "match" | "alternatives" | "none"; selected?: AppointmentSlot; alternatives: AppointmentSlot[] } { const matches = input.availableSlots.filter((slot) => (!input.requestedDate || slot.date === input.requestedDate) && (!input.requestedTime || slot.time === input.requestedTime)); if (matches.length) return { status: "match", selected: matches[0], alternatives: matches.slice(1) }; const alternatives = input.availableSlots.filter((slot) => !input.requestedDate || slot.date === input.requestedDate).slice(0, 3); return alternatives.length ? { status: "alternatives", alternatives } : { status: "none", alternatives: [] }; }
+export function negotiatePreparedSlot(input: { requestedDate?: string; requestedTime?: string; availableSlots: AppointmentSlot[]; }): { status: "match" | "alternatives" | "none"; selected?: AppointmentSlot; alternatives: AppointmentSlot[] } {
+  const matches = input.availableSlots.filter((slot) => (!input.requestedDate || slot.date === input.requestedDate) && (!input.requestedTime || slot.time === input.requestedTime));
+  if (matches.length > 0) {
+    const [selected, ...alternatives] = matches;
+    return { status: "match", selected, alternatives };
+  }
+  const alternatives = input.availableSlots.filter((slot) => !input.requestedDate || slot.date === input.requestedDate).slice(0, 3);
+  return alternatives.length > 0 ? { status: "alternatives", alternatives } : { status: "none", alternatives: [] };
+}
 export const NON_IMPLEMENTED_RESEARCH_TRACKS = ["full neural NAS / mutagenesis", "MAML", "DPO", "federated learning", "model distillation", "latent-space agent communication", "full chaos monkey", "quantum or neuromorphic hardware"] as const;

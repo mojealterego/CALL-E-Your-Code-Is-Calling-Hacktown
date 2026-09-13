@@ -5,6 +5,7 @@ import { simulateCall } from "./simulator.js";
 import { executeWithCalle } from "./calle.js";
 import { validateOutcome } from "./validation.js";
 import { prepareTransaction, reconcileTransaction } from "./transaction.js";
+import { createTransactionReceipt } from "./receipt.js";
 
 function failureOutcome(message: string) {
   return validateOutcome({
@@ -54,7 +55,7 @@ export async function runIncident(
   try {
     const raw = options.live
       ? await executeWithCalle(incident, operationKey)
-      : { outcome: simulateCall(incident) };
+      : { status: "completed" as const, outcome: simulateCall(incident) };
     const outcome = validateOutcome(raw.outcome);
     ledger.transition(operationKey, "verifying", {
       ...(raw.callId ? { callId: raw.callId } : {}),
@@ -67,11 +68,18 @@ export async function runIncident(
       acceptance: outcome.route_acceptance,
       confidence: outcome.confidence,
       evidenceSummary: outcome.evidence_summary,
+      providerStatus: raw.status,
       ...(outcome.evidence !== undefined ? { evidenceItems: outcome.evidence } : {}),
       ...(outcome.task_completed !== undefined ? { taskCompleted: outcome.task_completed } : {}),
       ...(outcome.completion_confidence !== undefined ? { completionConfidence: outcome.completion_confidence } : {}),
     };
     const reconciliation = reconcileTransaction(transaction, observedEvidence);
+    const receipt = createTransactionReceipt({
+      transactionId: transaction.transactionId,
+      transaction,
+      evidence: observedEvidence,
+      decision: reconciliation.decision,
+    });
 
     const state = reconciliation.decision === "commit"
       ? "resolved"
@@ -82,8 +90,9 @@ export async function runIncident(
     const record = ledger.transition(operationKey, state, {
       transactionDecision: reconciliation.decision,
       transactionReasons: reconciliation.reasons,
+      transactionReceipt: receipt,
     });
-    return { record, reused: false, outcome, transaction, reconciliation };
+    return { record, reused: false, outcome, transaction, reconciliation, receipt };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown CALL-E execution failure";
     const record = ledger.transition(operationKey, "recovering", {

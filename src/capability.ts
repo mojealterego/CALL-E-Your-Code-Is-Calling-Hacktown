@@ -7,6 +7,7 @@ export interface CallCapability {
   capabilityId: string;
   operationKey: string;
   participantId: string;
+  endpointDigest: string;
   scope: CapabilityScope;
   constraintsDigest: string;
   issuedAt: string;
@@ -19,12 +20,14 @@ function digest(value: unknown): string {
 
 /**
  * Creates a non-secret, operation-scoped capability fingerprint.
- * It binds the phone operation to the prepared participant and constraints.
+ * It binds the phone operation to the prepared participant, endpoint and constraints.
+ * The endpoint is represented by a digest so the raw phone number is not embedded in the capability.
  * This is an authorization artifact, not an identity or voice biometric proof.
  */
 export function createCallCapability(input: {
   operationKey: string;
   participantId: string;
+  endpoint: string;
   scope: CapabilityScope;
   constraints: unknown;
   now?: Date;
@@ -35,15 +38,18 @@ export function createCallCapability(input: {
   if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0 || ttlSeconds > 3600) {
     throw new Error("capability TTL must be between 1 and 3600 seconds");
   }
+  if (!input.endpoint) throw new Error("capability endpoint is required");
   const issuedAt = now.toISOString();
   const expiresAt = new Date(now.getTime() + ttlSeconds * 1000).toISOString();
-  const constraintsDigest = digest({ participantId: input.participantId, scope: input.scope, constraints: input.constraints });
+  const endpointDigest = digest(input.endpoint);
+  const constraintsDigest = digest({ participantId: input.participantId, endpointDigest, scope: input.scope, constraints: input.constraints });
   const capabilityId = `cap_${digest({ operationKey: input.operationKey, constraintsDigest, issuedAt }).slice(0, 24)}`;
   return {
     version: "1",
     capabilityId,
     operationKey: input.operationKey,
     participantId: input.participantId,
+    endpointDigest,
     scope: input.scope,
     constraintsDigest,
     issuedAt,
@@ -57,13 +63,15 @@ export function isCapabilityActive(capability: CallCapability, now = new Date())
 
 export function verifyCapabilityBinding(
   capability: CallCapability,
-  input: { operationKey: string; participantId: string; scope: CapabilityScope; constraints: unknown },
+  input: { operationKey: string; participantId: string; endpoint: string; scope: CapabilityScope; constraints: unknown },
 ): boolean {
   if (capability.operationKey !== input.operationKey) return false;
   if (capability.participantId !== input.participantId) return false;
+  if (capability.endpointDigest !== digest(input.endpoint)) return false;
   if (capability.scope !== input.scope) return false;
   return capability.constraintsDigest === digest({
     participantId: input.participantId,
+    endpointDigest: capability.endpointDigest,
     scope: input.scope,
     constraints: input.constraints,
   });

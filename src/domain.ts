@@ -13,6 +13,7 @@ export type IncidentState =
 export type RouteAcceptance = "yes" | "no" | "unknown";
 export type EscalationLevel = "urgent" | "normal" | "none" | "unknown";
 export type ConfidenceLabel = "high" | "medium" | "low" | "unknown";
+export type AppointmentConfirmation = "yes" | "no" | "unknown";
 
 export interface CompletionConfidence {
   score?: number;
@@ -30,6 +31,12 @@ export interface Incident {
   maxEta: string;
   region?: string;
   locale?: string;
+  appointment?: {
+    clinicName: string;
+    patientName: string;
+    doctorName: string;
+    appointmentReference: string;
+  };
 }
 
 export interface CallOutcome {
@@ -44,6 +51,13 @@ export interface CallOutcome {
   task_completed?: boolean;
   failure_code?: string;
   failure_message?: string;
+  appointment_confirmed?: AppointmentConfirmation;
+  doctor_confirmed?: string;
+  first_visit?: AppointmentConfirmation;
+  identity_document_reminder_given?: boolean;
+  arrive_30_minutes_early?: boolean;
+  registration_reminder_given?: boolean;
+  conversation_completed?: boolean;
 }
 
 export interface CallRecord {
@@ -65,30 +79,40 @@ export interface CallRecord {
 export const RESULT_SCHEMA = {
   type: "object",
   additionalProperties: false,
+  required: ["route", "route_acceptance", "eta_update_time", "escalation_needed", "evidence_summary", "confidence"],
+  properties: {
+    route: { type: "string", description: "The exact route the recipient explicitly discussed or accepted. Use an empty string if not established." },
+    route_acceptance: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only when the recipient clearly accepts the proposed route; no when they clearly reject it; unknown when the call does not establish this." },
+    eta_update_time: { type: "string", description: "The revised ETA explicitly stated by the recipient, preferably HH:MM; use an empty string if not established." },
+    escalation_needed: { type: "string", enum: ["urgent", "normal", "none", "unknown"] },
+    evidence_summary: { type: "string", minLength: 1, description: "Concise evidence grounded in what the recipient actually said; never infer missing facts." },
+    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
+  }
+} as const;
+
+export const APPOINTMENT_RESULT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
   required: [
-    "route",
-    "route_acceptance",
-    "eta_update_time",
-    "escalation_needed",
+    "appointment_confirmed",
+    "doctor_confirmed",
+    "first_visit",
+    "identity_document_reminder_given",
+    "arrive_30_minutes_early",
+    "registration_reminder_given",
+    "conversation_completed",
     "evidence_summary",
     "confidence"
   ],
   properties: {
-    route: { type: "string", description: "The exact route the recipient explicitly discussed or accepted. Use an empty string if not established." },
-    route_acceptance: {
-      type: "string",
-      enum: ["yes", "no", "unknown"],
-      description: "Use yes only when the recipient clearly accepts the proposed route; no when they clearly reject it; unknown when the call does not establish this."
-    },
-    eta_update_time: { type: "string", description: "The revised ETA explicitly stated by the recipient, preferably HH:MM; use an empty string if not established." },
-    escalation_needed: {
-      type: "string",
-      enum: ["urgent", "normal", "none", "unknown"]
-    },
-    evidence_summary: { type: "string", minLength: 1, description: "Concise evidence grounded in what the recipient actually said; never infer missing facts." },
-    confidence: {
-      type: "string",
-      enum: ["high", "medium", "low", "unknown"]
-    }
+    appointment_confirmed: { type: "string", enum: ["yes", "no", "unknown"] },
+    doctor_confirmed: { type: "string", description: "Doctor name confirmed in the conversation; empty only if not established." },
+    first_visit: { type: "string", enum: ["yes", "no", "unknown"] },
+    identity_document_reminder_given: { type: "boolean" },
+    arrive_30_minutes_early: { type: "boolean" },
+    registration_reminder_given: { type: "boolean" },
+    conversation_completed: { type: "boolean" },
+    evidence_summary: { type: "string", minLength: 1 },
+    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
   }
 } as const;

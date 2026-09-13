@@ -23,6 +23,7 @@ export interface ObservedEvidence {
   evidenceItems?: string[];
   taskCompleted?: boolean;
   completionConfidence?: unknown;
+  providerStatus?: "completed" | "failed" | "canceled" | "queued" | "in_progress" | "unknown";
 }
 
 export interface ReconciliationResult {
@@ -70,6 +71,7 @@ export function reconcileTransaction(
   const observedEta = evidence.eta ? clockToMinutes(evidence.eta) : undefined;
   const maxEta = clockToMinutes(transaction.constraints.maxEta);
 
+  if (evidence.providerStatus !== "completed") reasons.push("authoritative CALL-E status is not completed");
   if (evidence.acceptance !== "yes") reasons.push("participant did not positively accept the proposed change");
   if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
   if (evidence.taskCompleted !== true) reasons.push("CALL-E task did not establish a successful terminal completion");
@@ -80,6 +82,7 @@ export function reconcileTransaction(
   else if (maxEta !== undefined && observedEta > maxEta) reasons.push("observed ETA exceeds prepared constraint");
 
   if (
+    evidence.providerStatus !== "completed" ||
     evidence.acceptance === "unknown" ||
     evidence.confidence === "unknown" ||
     evidence.route === undefined ||
@@ -91,5 +94,5 @@ export function reconcileTransaction(
     return { decision: "recover", reasons };
   }
   if (reasons.length > 0) return { decision: "abort", reasons };
-  return { decision: "commit", reasons: ["observed evidence matches the prepared transaction"] };
+  return { decision: "commit", reasons: ["authoritative terminal evidence matches the prepared transaction"] };
 }

@@ -6,15 +6,18 @@ describe("call capabilities", () => {
   const input = {
     operationKey: "op-I-42",
     participantId: "TRUCK-42",
+    endpoint: "+48123456789",
     scope: "route_change" as const,
     constraints: { route: "B", maxEta: "19:00" },
     now,
   };
 
-  it("binds one capability to one operation and constraint set", () => {
+  it("binds one capability to one participant, endpoint and constraint set", () => {
     const capability = createCallCapability(input);
     expect(capability.capabilityId).toMatch(/^cap_[a-f0-9]{24}$/);
+    expect(capability.endpointDigest).toMatch(/^[a-f0-9]{64}$/);
     expect(verifyCapabilityBinding(capability, input)).toBe(true);
+    expect(verifyCapabilityBinding(capability, { ...input, endpoint: "+48987654321" })).toBe(false);
     expect(verifyCapabilityBinding(capability, { ...input, constraints: { route: "C", maxEta: "19:00" } })).toBe(false);
   });
 

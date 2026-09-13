@@ -23,6 +23,8 @@ RECONCILE
   ├── COMMIT  → prepared operational state may change
   ├── ABORT   → evidence conflicts with the prepared state
   └── RECOVER → execution/evidence is incomplete; do not duplicate the call
+  ↓
+RECEIPT — bind intent + evidence + decision into a tamper-evident digest
 ```
 
 The phone conversation is deliberately **not** the commit boundary. A positive conversational answer is insufficient unless it matches the prepared transaction constraints and CALL-E reports a successful terminal completion.
@@ -44,12 +46,14 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or co
 - Provider-side idempotency key for safe retries of the same logical operation.
 - Strict JSON Schema with explicit `unknown` states.
 - Terminal `task_completed`, completion-confidence and CALL-E evidence captured from the provider result.
+- Authoritative provider terminal status is now a prerequisite for commit; `completed` is treated separately from conversational content.
 - Deterministic reconciliation producing `commit`, `abort` or `recover`.
 - `RECOVER` for incomplete/uncertain provider execution instead of accidental retry-and-duplicate behavior.
+- Cryptographic transaction receipts binding prepared transaction, observed evidence and final decision into SHA-256 digests.
 - Append-only, hash-linked prototype audit history.
 - Current CALL-E webhook envelope validation and event-ID/header binding.
 - Deterministic dry-run path using the same validation and reconciliation pipeline.
-- Regression tests for commit, conflict, recovery, idempotency and webhook safety.
+- Regression tests for commit, conflict, recovery, idempotency, receipt integrity and webhook safety.
 - Explicit live-mode opt-in; no silent fallback from live to dry-run.
 
 ## Quick start
@@ -78,27 +82,14 @@ npm run live
 
 Live execution is intentionally explicit because CALL-E can place real outbound phone calls. The server-side API key is never intended for frontend use.
 
-## Example transaction receipt
+## Transaction receipt
 
-```json
-{
-  "transactionId": "TX-AF-DEMO-0001",
-  "decision": "commit",
-  "prepared": {
-    "route": "B",
-    "maxEta": "19:00"
-  },
-  "observed": {
-    "route": "B",
-    "eta": "18:40",
-    "acceptance": "yes",
-    "confidence": "high"
-  },
-  "provider": {
-    "callId": "call_123"
-  }
-}
-```
+A terminal decision produces a receipt containing:
+
+- `transactionDigest` — digest of the prepared transaction;
+- `evidenceDigest` — digest of the authoritative observed evidence;
+- `decisionDigest` — digest binding transaction, evidence and `commit` / `abort` / `recover` together;
+- `receiptId` — stable short identifier derived from the decision digest.
 
 The receipt is an **operational decision record**, not a claim of legal contractual binding.
 
@@ -145,6 +136,12 @@ Used when the execution or evidence is incomplete or uncertain. Recovery must re
                     └──────┬─────┬─────┬──┘
                            /      │      \
                        COMMIT   ABORT   RECOVER
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │  Transaction Receipt │
+                    │ intent/evidence hash│
+                    └─────────────────────┘
 ```
 
 Provider-specific behavior is isolated in `src/calle.ts`. Business transaction policy lives independently in `src/transaction.ts` and `src/orchestrator.ts`.
@@ -167,6 +164,7 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 │   ├── ledger.ts
 │   ├── orchestrator.ts
 │   ├── policy.ts
+│   ├── receipt.ts
 │   ├── simulator.ts
 │   ├── transaction.ts
 │   ├── validation.ts
@@ -175,6 +173,7 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
 │   ├── policy.test.ts
+│   ├── receipt.test.ts
 │   ├── transaction.test.ts
 │   ├── validation.test.ts
 │   └── webhook.test.ts
@@ -186,9 +185,9 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 
 ## CALL-E integration
 
-The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. The current SDK exposes terminal `taskCompleted`, `completionConfidence` and `evidence` alongside the structured result.
+The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. The integration also preserves the provider's terminal lifecycle separately from business evidence so a non-terminal or failed provider state can never become a commit.
 
-CALL-E's current public SDK release is `0.7.0`; the project pins the dependency range to that current stable line rather than the older prototype `0.2.x` API. The generic one-shot Calls API remains the execution primitive used here.
+The project uses the current `0.7.x` SDK line. The generic one-shot Calls API remains the execution primitive used here.
 
 ## Security boundary
 
@@ -212,7 +211,7 @@ The intended three-minute demonstration is:
 1:45  COMMIT
 2:00  CONFLICT scenario → ABORT
 2:25  UNKNOWN scenario → RECOVER
-2:50  Final transaction receipt
+2:50  Final cryptographic transaction receipt
 ```
 
 The critical demonstration is that a phone call can produce evidence without being granted direct authority to mutate the business state.

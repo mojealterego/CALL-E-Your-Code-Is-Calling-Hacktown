@@ -49,6 +49,7 @@ export interface CallOutcome {
 export interface CallRecord {
   operationKey: string;
   callId?: string;
+  capabilityId?: string;
   state: IncidentState;
   createdAt: string;
   updatedAt: string;

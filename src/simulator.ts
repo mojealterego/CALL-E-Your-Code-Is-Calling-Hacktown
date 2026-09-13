@@ -1,12 +1,15 @@
 import type { CallOutcome, Incident } from "./domain.js";
 
 export function simulateCall(incident: Incident): CallOutcome {
-  const eta = "16:40";
+  const eta = "18:40";
   return {
+    route: incident.proposedRoute,
     route_acceptance: "yes",
     eta_update_time: eta,
     escalation_needed: "none",
-    evidence_summary: `Driver confirmed the diversion for ${incident.vehicleId} and stated that the revised ETA is ${eta}.`,
+    evidence_summary: `Driver confirmed ${incident.proposedRoute} and stated that the revised ETA is ${eta}.`,
     confidence: "high",
+    task_completed: true,
+    completion_confidence: "high",
   };
 }

@@ -3,6 +3,8 @@ import type { CallOutcome, Incident } from "./domain.js";
 import { RESULT_SCHEMA } from "./domain.js";
 import { validateOutcome } from "./validation.js";
 
+export type CalleCallStatus = "queued" | "in_progress" | "completed" | "failed" | "canceled" | "unknown";
+
 function extractStructuredResult(call: unknown): unknown {
   if (!call || typeof call !== "object") return undefined;
   const value = call as Record<string, unknown>;
@@ -19,10 +21,17 @@ function stringField(value: Record<string, unknown>, ...keys: string[]): string 
   return typeof result === "string" ? result : undefined;
 }
 
+function statusField(value: Record<string, unknown>): CalleCallStatus {
+  const status = value.status;
+  return status === "queued" || status === "in_progress" || status === "completed" || status === "failed" || status === "canceled"
+    ? status
+    : "unknown";
+}
+
 export async function executeWithCalle(
   incident: Incident,
   idempotencyKey: string,
-): Promise<{ callId?: string; outcome: CallOutcome }> {
+): Promise<{ callId?: string; status: CalleCallStatus; outcome: CallOutcome }> {
   const apiKey = process.env.CALLE_API_KEY;
   if (!apiKey) throw new Error("CALLE_API_KEY is required for live mode");
 
@@ -82,5 +91,6 @@ export async function executeWithCalle(
 
   const outcome = validateOutcome(rawOutcome);
   const callId = stringField(callValue, "id", "call_id", "callId");
-  return callId === undefined ? { outcome } : { callId, outcome };
+  const status = statusField(callValue);
+  return callId === undefined ? { status, outcome } : { callId, status, outcome };
 }

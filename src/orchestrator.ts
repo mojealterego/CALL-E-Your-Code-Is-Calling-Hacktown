@@ -61,16 +61,17 @@ export async function runIncident(
       outcome,
     });
 
-    const reconciliation = reconcileTransaction(transaction, {
+    const observedEvidence = {
       route: outcome.route,
       eta: outcome.eta_update_time,
       acceptance: outcome.route_acceptance,
       confidence: outcome.confidence,
       evidenceSummary: outcome.evidence_summary,
-      evidenceItems: outcome.evidence,
-      taskCompleted: outcome.task_completed,
-      completionConfidence: outcome.completion_confidence,
-    });
+      ...(outcome.evidence !== undefined ? { evidenceItems: outcome.evidence } : {}),
+      ...(outcome.task_completed !== undefined ? { taskCompleted: outcome.task_completed } : {}),
+      ...(outcome.completion_confidence !== undefined ? { completionConfidence: outcome.completion_confidence } : {}),
+    };
+    const reconciliation = reconcileTransaction(transaction, observedEvidence);
 
     const state = reconciliation.decision === "commit"
       ? "resolved"

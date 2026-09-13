@@ -36,6 +36,7 @@ export interface CallOutcome {
   eta_update_time: string;
   escalation_needed: EscalationLevel;
   evidence_summary: string;
+  evidence?: string[];
   confidence: ConfidenceLabel;
   completion_confidence?: CompletionConfidence | string;
   task_completed?: boolean;

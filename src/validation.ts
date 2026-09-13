@@ -41,6 +41,7 @@ export function validateOutcome(value: unknown): CallOutcome {
     if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
     if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
     if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
+    const completionConfidence = validateCompletionConfidence(v.completion_confidence);
     return {
       route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "none",
       evidence_summary: v.evidence_summary, confidence: v.confidence as CallOutcome["confidence"],
@@ -60,7 +61,7 @@ export function validateOutcome(value: unknown): CallOutcome {
       new_appointment_time: v.new_appointment_time,
       ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),
       ...(v.task_completed !== undefined ? { task_completed: v.task_completed as boolean } : {}),
-      ...(v.completion_confidence !== undefined ? { completion_confidence: validateCompletionConfidence(v.completion_confidence) } : {}),
+      ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
       ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}),
       ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
     };

@@ -56,6 +56,13 @@ async function main() {
   }, null, 2));
 
   if (!live) console.log("DRY-RUN GUARANTEE: no provider request and no phone call were made.");
+
+  // A live workflow is only successful if CALL-E actually accepted a call task.
+  // Business recovery is valid after a real call exists; provider/auth failures
+  // without a call id must make the CI job fail instead of appearing successful.
+  if (live && !result.record.callId) {
+    throw new Error("Live CALL-E test did not create a call task; no outbound call was placed.");
+  }
 }
 
 main().catch((error) => {

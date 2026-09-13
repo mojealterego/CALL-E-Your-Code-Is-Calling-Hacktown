@@ -1,8 +1,8 @@
 import { CalleClient } from "@call-e/calle";
+import type { CallCapability } from "./capability.js";
 import type { CallOutcome, Incident } from "./domain.js";
 import { RESULT_SCHEMA } from "./domain.js";
 import { validateOutcome } from "./validation.js";
-import { createCallCapability } from "./capability.js";
 
 export type CalleCallStatus = "queued" | "in_progress" | "completed" | "failed" | "canceled" | "unknown";
 
@@ -32,6 +32,7 @@ function statusField(value: Record<string, unknown>): CalleCallStatus {
 export async function executeWithCalle(
   incident: Incident,
   idempotencyKey: string,
+  capability: CallCapability,
 ): Promise<{ callId?: string; status: CalleCallStatus; outcome: CallOutcome }> {
   const apiKey = process.env.CALLE_API_KEY;
   if (!apiKey) throw new Error("CALLE_API_KEY is required for live mode");
@@ -39,12 +40,6 @@ export async function executeWithCalle(
   const client = new CalleClient({ apiKey });
   const region = incident.region ?? process.env.CALLE_REGION ?? "US";
   const locale = incident.locale ?? process.env.CALLE_LOCALE ?? "en-US";
-  const capability = createCallCapability({
-    operationKey: idempotencyKey,
-    participantId: incident.vehicleId,
-    scope: "route_change",
-    constraints: { route: incident.proposedRoute, maxEta: incident.maxEta },
-  });
   const task = [
     "Coordinate the prepared route change as a fact-finding call.",
     `Vehicle: ${incident.vehicleId}`,
@@ -64,6 +59,7 @@ export async function executeWithCalle(
       aegisfleet_operation_key: idempotencyKey,
       aegisfleet_capability_id: capability.capabilityId,
       aegisfleet_capability_constraints_digest: capability.constraintsDigest,
+      aegisfleet_capability_endpoint_digest: capability.endpointDigest,
       aegisfleet_capability_expires_at: capability.expiresAt,
     },
   }, { idempotencyKey });

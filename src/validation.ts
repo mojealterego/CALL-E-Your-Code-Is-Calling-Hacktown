@@ -21,13 +21,22 @@ export function validateOutcome(value: unknown): CallOutcome {
   const v = value as Record<string, unknown>;
   const appointmentResult = v.patient_confirmed !== undefined || v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined || v.appointment_decision !== undefined;
   if (appointmentResult) {
-    for (const [key, set] of [["patient_confirmed", APPOINTMENT], ["appointment_confirmed", APPOINTMENT], ["first_visit", APPOINTMENT]] as const) {
-      if (!set.has(String(v[key]))) throw new Error(`Invalid ${key}`);
+    for (const key of ["patient_confirmed", "appointment_confirmed", "first_visit"]) {
+      if (!APPOINTMENT.has(String(v[key]))) throw new Error(`Invalid ${key}`);
     }
     if (typeof v.doctor_confirmed !== "string") throw new Error("Invalid doctor_confirmed");
-    for (const key of ["identity_document_reminder_given", "arrive_30_minutes_early", "registration_reminder_given", "information_form_reminder_given", "conversation_completed", "reschedule_requested", "reschedule_completed"]) {
-      if (typeof v[key] !== "boolean") throw new Error(`Invalid ${key}`);
-    }
+    const booleanField = (key: string): boolean => {
+      const field = v[key];
+      if (typeof field !== "boolean") throw new Error(`Invalid ${key}`);
+      return field;
+    };
+    const identityDocumentReminderGiven = booleanField("identity_document_reminder_given");
+    const arrive30MinutesEarly = booleanField("arrive_30_minutes_early");
+    const registrationReminderGiven = booleanField("registration_reminder_given");
+    const informationFormReminderGiven = booleanField("information_form_reminder_given");
+    const conversationCompleted = booleanField("conversation_completed");
+    const rescheduleRequested = booleanField("reschedule_requested");
+    const rescheduleCompleted = booleanField("reschedule_completed");
     if (!APPOINTMENT_DECISION.has(String(v.appointment_decision))) throw new Error("Invalid appointment_decision");
     if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
     if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
@@ -39,14 +48,14 @@ export function validateOutcome(value: unknown): CallOutcome {
       appointment_confirmed: v.appointment_confirmed as CallOutcome["appointment_confirmed"],
       doctor_confirmed: v.doctor_confirmed,
       first_visit: v.first_visit as CallOutcome["first_visit"],
-      identity_document_reminder_given: v.identity_document_reminder_given,
-      arrive_30_minutes_early: v.arrive_30_minutes_early,
-      registration_reminder_given: v.registration_reminder_given,
-      information_form_reminder_given: v.information_form_reminder_given,
-      conversation_completed: v.conversation_completed,
+      identity_document_reminder_given: identityDocumentReminderGiven,
+      arrive_30_minutes_early: arrive30MinutesEarly,
+      registration_reminder_given: registrationReminderGiven,
+      information_form_reminder_given: informationFormReminderGiven,
+      conversation_completed: conversationCompleted,
       appointment_decision: v.appointment_decision as CallOutcome["appointment_decision"],
-      reschedule_requested: v.reschedule_requested,
-      reschedule_completed: v.reschedule_completed,
+      reschedule_requested: rescheduleRequested,
+      reschedule_completed: rescheduleCompleted,
       new_appointment_date: v.new_appointment_date,
       new_appointment_time: v.new_appointment_time,
       ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),

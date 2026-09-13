@@ -51,6 +51,12 @@ export async function executeWithCalle(
     "State only facts established by the conversation. Never invent an ETA, acceptance, evidence, or confidence.",
   ].join("\n");
 
+  // Keep the business operation key stable for correlation, but scope the provider
+  // idempotency key to this specific capability issuance. This preserves safe
+  // transport retries while allowing a deliberate new call after an earlier
+  // attempt has already reached a terminal state or produced unusable evidence.
+  const providerIdempotencyKey = `${idempotencyKey}:capability:${capability.capabilityId}`;
+
   const call = await client.calls.createAndWait({
     task,
     recipients: [{ phones: [incident.phone], region, locale }],
@@ -62,7 +68,7 @@ export async function executeWithCalle(
       aegisfleet_capability_endpoint_digest: capability.endpointDigest,
       aegisfleet_capability_expires_at: capability.expiresAt,
     },
-  }, { idempotencyKey });
+  }, { idempotencyKey: providerIdempotencyKey });
 
   const callValue = call as unknown as Record<string, unknown>;
   const structured = extractStructuredResult(call);
@@ -93,6 +99,7 @@ export async function executeWithCalle(
         confidence: "unknown",
         ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
         ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
+        ...(evidence !== undefined ? { evidence } : {}),
         ...(failureCode !== undefined ? { failure_code: failureCode } : {}),
         ...(failureMessage !== undefined ? { failure_message: failureMessage } : {}),
       };

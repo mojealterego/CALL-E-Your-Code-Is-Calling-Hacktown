@@ -1,8 +1,23 @@
-import type { CallOutcome } from "./domain.js";
+import type { CallOutcome, CompletionConfidence } from "./domain.js";
 
 const ROUTE_ACCEPTANCE = new Set(["yes", "no", "unknown"]);
 const ESCALATION = new Set(["urgent", "normal", "none", "unknown"]);
 const CONFIDENCE = new Set(["high", "medium", "low", "unknown"]);
+
+function validateCompletionConfidence(value: unknown): CompletionConfidence | string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") throw new Error("Invalid completion_confidence");
+  const v = value as Record<string, unknown>;
+  if (v.score !== undefined && (typeof v.score !== "number" || v.score < 0 || v.score > 1)) {
+    throw new Error("Invalid completion_confidence score");
+  }
+  if (v.label !== undefined && typeof v.label !== "string") throw new Error("Invalid completion_confidence label");
+  return {
+    ...(v.score !== undefined ? { score: v.score } : {}),
+    ...(v.label !== undefined ? { label: v.label } : {}),
+  };
+}
 
 export function validateOutcome(value: unknown): CallOutcome {
   if (!value || typeof value !== "object") throw new Error("CALL-E result must be an object");
@@ -14,7 +29,7 @@ export function validateOutcome(value: unknown): CallOutcome {
   if (typeof v.eta_update_time !== "string") throw new Error("Invalid eta_update_time");
   if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
   if (v.task_completed !== undefined && typeof v.task_completed !== "boolean") throw new Error("Invalid task_completed");
-  if (v.completion_confidence !== undefined && typeof v.completion_confidence !== "string") throw new Error("Invalid completion_confidence");
+  const completionConfidence = validateCompletionConfidence(v.completion_confidence);
   return {
     route: v.route,
     route_acceptance: v.route_acceptance as CallOutcome["route_acceptance"],
@@ -23,7 +38,7 @@ export function validateOutcome(value: unknown): CallOutcome {
     evidence_summary: v.evidence_summary,
     confidence: v.confidence as CallOutcome["confidence"],
     ...(v.task_completed !== undefined ? { task_completed: v.task_completed } : {}),
-    ...(v.completion_confidence !== undefined ? { completion_confidence: v.completion_confidence } : {}),
+    ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
     ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}),
     ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
   };

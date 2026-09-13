@@ -103,6 +103,31 @@ This architecture creates a clean path toward future device-attestation, private
 
 See `docs/trust-plane.md` for the complete design.
 
+## Optional telephony evidence plane: Ringostat
+
+Ringostat is **not a replacement for CALL-E** in this hackathon project. It is a potential secondary telephony adapter for environments where the authorized phone endpoint is also managed by Ringostat.
+
+Ringostat exposes call-log data through its API, including call date, caller, destination, disposition, duration, unique call identifier, recording availability and related call metadata. It also supports webhooks for incoming/outgoing call lifecycle events and an AI-processed-call event that can carry summaries, sentiment, recommendations and VTT transcription results.
+
+That creates a useful **dual-evidence architecture**:
+
+```text
+                 CALL-E
+           conversation evidence
+                  │
+                  ▼
+            ┌─────────────┐
+            │ Reconcile   │◄──────── Ringostat
+            │ evidence    │          telephony evidence
+            └──────┬──────┘
+                   │
+          COMMIT / ABORT / RECOVER
+```
+
+The important boundary is that Ringostat data would corroborate telephony facts such as whether a call was answered, its disposition, duration or recording availability; it would **not** override AegisFleet's prepared transaction constraints. Ringostat webhook notifications would likewise be treated as external notifications, not as an automatic business commit signal.
+
+A future adapter can therefore use Ringostat as an independent network/telephony evidence source while preserving the existing transaction engine and CALL-E requirement. See `docs/ringostat-adapter.md`.
+
 ## Transaction receipt
 
 A terminal decision produces a receipt containing:
@@ -182,6 +207,7 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 │   ├── architecture.md
 │   ├── demo-script.md
 │   ├── grant-proposal.md
+│   ├── ringostat-adapter.md
 │   ├── security.md
 │   └── trust-plane.md
 ├── src/
@@ -254,7 +280,7 @@ The critical demonstration is that a phone call can produce evidence without bei
 
 - Durable transactional idempotency storage.
 - Persistent audit storage and independent digest verification.
-- Authoritative CALL-E re-fetch worker for webhook-driven reconciliation.
+- Ringostat/telephony evidence adapter for deployments where the authorized endpoint is managed by an external PBX/telephony provider.
 - Enterprise identity/device-attestation adapter.
 - RBAC and organization-level policy configuration.
 - Secrets management and rotation.

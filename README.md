@@ -15,7 +15,7 @@ INTENT
   ↓
 PREPARE — freeze exact route + ETA constraint
   ↓
-AUTHORIZE — create a short-lived capability bound to that transaction
+AUTHORIZE — create a short-lived capability bound to participant + endpoint + constraints
   ↓
 CALL — CALL-E contacts the authorized participant
   ↓
@@ -26,7 +26,7 @@ RECONCILE
   ├── ABORT   → evidence conflicts with the prepared state
   └── RECOVER → execution/evidence is incomplete; do not duplicate the call
   ↓
-RECEIPT — bind intent + evidence + decision into a tamper-evident digest
+RECEIPT — bind intent + capability + evidence + decision into a tamper-evident digest
 ```
 
 The phone conversation is deliberately **not** the commit boundary. A positive conversational answer is insufficient unless it matches the prepared transaction constraints and CALL-E reports a successful terminal completion.
@@ -44,7 +44,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or co
 ## Implemented
 
 - Explicit transaction preparation with immutable route/ETA constraints.
-- Short-lived, operation-scoped capability fingerprint bound to participant + exact constraints.
+- Short-lived, operation-scoped capability bound to participant, authorized phone endpoint and exact constraints.
 - CALL-E server SDK execution with E.164 recipients, region and locale.
 - Provider-side idempotency key for safe retries of the same logical operation.
 - Strict JSON Schema with explicit `unknown` states.
@@ -52,7 +52,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or co
 - Authoritative provider terminal status is now a prerequisite for commit; `completed` is treated separately from conversational content.
 - Deterministic reconciliation producing `commit`, `abort` or `recover`.
 - `RECOVER` for incomplete/uncertain provider execution instead of accidental retry-and-duplicate behavior.
-- Cryptographic transaction receipts binding prepared transaction, observed evidence and final decision into SHA-256 digests.
+- Cryptographic transaction receipts binding prepared transaction, scoped capability, observed evidence and final decision into SHA-256 digests.
 - Append-only, hash-linked prototype audit history.
 - Current CALL-E webhook envelope validation and event-ID/header binding.
 - Deterministic dry-run path using the same validation and reconciliation pipeline.
@@ -97,7 +97,7 @@ WHERE = authorized phone endpoint
 WHAT  = transaction-scoped capability
 ```
 
-The capability is non-secret and short-lived. It binds the operation to the exact prepared route and ETA constraints and is carried into CALL-E metadata for correlation. It is not presented as proof of human identity, voice biometric authentication or carrier-grade subscriber authentication.
+The capability is non-secret and short-lived. It binds the operation to the exact prepared route and ETA constraints and is carried into CALL-E metadata for correlation. The endpoint itself is represented by a digest inside the capability. The capability is not presented as proof of human identity, voice biometric authentication or carrier-grade subscriber authentication.
 
 This architecture creates a clean path toward future device-attestation, private-cellular or enterprise-identity adapters without making the transaction engine dependent on a particular network technology.
 
@@ -107,9 +107,9 @@ See `docs/trust-plane.md` for the complete design.
 
 A terminal decision produces a receipt containing:
 
-- `transactionDigest` — digest of the prepared transaction;
+- `transactionDigest` — digest of the prepared transaction plus its scoped capability;
 - `evidenceDigest` — digest of the authoritative observed evidence;
-- `decisionDigest` — digest binding transaction, evidence and `commit` / `abort` / `recover` together;
+- `decisionDigest` — digest binding transaction, capability, evidence and `commit` / `abort` / `recover` together;
 - `receiptId` — stable short identifier derived from the decision digest.
 
 The receipt is an **operational decision record**, not a claim of legal contractual binding.
@@ -138,7 +138,7 @@ Used when the execution or evidence is incomplete or uncertain. Recovery must re
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  Capability Builder │
+                    │ Capability Builder  │
                     │ scoped + expiring   │
                     └──────────┬──────────┘
                                │
@@ -166,8 +166,8 @@ Used when the execution or evidence is incomplete or uncertain. Recovery must re
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  Transaction Receipt │
-                    │ intent/evidence hash│
+                    │  Transaction Receipt│
+                    │ capability + hashes│
                     └─────────────────────┘
 ```
 
@@ -217,7 +217,7 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 
 ## CALL-E integration
 
-The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. The integration also preserves the provider's terminal lifecycle separately from business evidence so a non-terminal or failed provider state can never become a commit.
+The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. The integration preserves the provider's terminal lifecycle separately from business evidence so a non-terminal or failed provider state can never become a commit. The orchestrator issues the capability once and passes the same artifact into the CALL-E adapter.
 
 The project uses the current `0.7.x` SDK line. The generic one-shot Calls API remains the execution primitive used here.
 
@@ -255,7 +255,6 @@ The critical demonstration is that a phone call can produce evidence without bei
 - Durable transactional idempotency storage.
 - Persistent audit storage and independent digest verification.
 - Authoritative CALL-E re-fetch worker for webhook-driven reconciliation.
-- Bind the capability artifact directly into the persistent receipt schema.
 - Enterprise identity/device-attestation adapter.
 - RBAC and organization-level policy configuration.
 - Secrets management and rotation.

@@ -2,11 +2,13 @@ import type { IncidentState } from "./domain.js";
 
 const allowed: Record<IncidentState, IncidentState[]> = {
   detected: ["validated", "escalated"],
-  validated: ["approved", "escalated"],
-  approved: ["calling", "escalated"],
-  calling: ["resolved", "escalated"],
+  validated: ["prepared", "escalated"],
+  prepared: ["calling", "escalated"],
+  calling: ["verifying", "recovering", "escalated"],
+  verifying: ["resolved", "recovering", "escalated"],
   resolved: [],
   escalated: [],
+  recovering: [],
 };
 
 export function assertTransition(from: IncidentState, to: IncidentState): void {

@@ -8,6 +8,7 @@ The system separates:
 
 - **intent** — what the business wants to happen;
 - **prepare** — the exact constraints that may be committed;
+- **authorization** — a short-lived capability bound to the participant, endpoint and constraints;
 - **provider execution** — the real CALL-E phone interaction;
 - **evidence** — what the terminal call result establishes;
 - **reconciliation** — comparison of observed evidence with prepared intent;
@@ -26,13 +27,14 @@ A language model never directly controls the consequential state transition.
 6. **Provider execution** — dry-run simulation or CALL-E server SDK.
 7. **Terminal verification** — require successful CALL-E completion before accepting evidence as a commit candidate.
 8. **Evidence extraction** — retain structured result, terminal completion state and provider evidence.
-9. **Reconciliation** — compare observed route, acceptance and ETA against the prepared transaction.
-10. **Disposition**:
+9. **Optional secondary evidence** — in a Ringostat-managed deployment, normalize independent PBX/call-log facts without allowing them to bypass the transaction boundary.
+10. **Reconciliation** — compare observed route, acceptance and ETA against the prepared transaction.
+11. **Disposition**:
    - `commit` when all constraints match;
    - `abort` when terminal evidence conflicts with the prepared transaction;
    - `recover` when execution/evidence is incomplete or uncertain.
-11. **Authoritative recovery** — re-fetch an existing CALL-E call by ID and resume verification without placing a second outbound call.
-12. **Audit** — every transition is recorded in append-only hash-linked history.
+12. **Authoritative recovery** — re-fetch an existing CALL-E call by ID and resume verification without placing a second outbound call.
+13. **Audit** — every transition is recorded in append-only hash-linked history.
 
 ## Transaction boundary
 
@@ -44,6 +46,8 @@ Prepared business state
         │
         ▼
 Terminal evidence
+        │
+        ├──────── optional Ringostat corroboration
         │
         ▼
   Reconciliation
@@ -70,7 +74,8 @@ The differentiator is not outbound calling. It is the **decision boundary around
 - recovery re-fetches the existing provider call instead of initiating another call;
 - provider idempotency prevents duplicate logical calls during network retries;
 - dry-run and live execution use the same business reconciliation pipeline;
-- provider-specific behavior is isolated behind `src/calle.ts`.
+- provider-specific behavior is isolated behind `src/calle.ts`;
+- an optional external PBX adapter can add corroborating evidence without becoming a second commit authority.
 
 ## Trust plane
 
@@ -93,10 +98,38 @@ The prototype uses the CALL-E TypeScript server SDK for backend-controlled execu
 - region and locale;
 - a bounded natural-language task;
 - a strict structured result schema;
-- caller-owned metadata containing the logical operation key;
+- caller-owned metadata containing the logical operation key and capability correlation data;
 - a stable provider idempotency key.
 
 The terminal result provides the structured result together with `task_completed`, `completion_confidence`, `evidence`, failure information and recipient/attempt state. AegisFleet treats these as provider evidence, not as permission to commit.
+
+## Optional Ringostat evidence adapter
+
+Ringostat is deliberately modeled as a **secondary telephony evidence source**, not as an alternative execution engine.
+
+Its documented Call Log API can expose fields such as `uniqueid`, `disposition`, `duration`, `recording`, `has_recording`, caller/destination and call timestamps. Its webhook system can emit incoming/outgoing call events and can be filtered. Ringostat AI can also produce post-call summaries, sentiment, recommendations and VTT transcription data.
+
+The intended future adapter boundary is:
+
+```text
+Ringostat API/Webhook
+        │
+        ▼
+ringostat.ts
+        │
+        ▼
+normalized TelephonyEvidence
+        │
+        ├──────────────┐
+        ▼              ▼
+      audit        reconciliation
+```
+
+Ringostat evidence can corroborate telephony facts such as answered/failed disposition, duration, recording availability or provider call identity. It cannot override the prepared route/ETA constraints, create authorization, or directly commit business state.
+
+The Ringostat `Auth-key` must remain server-side. Webhook notifications are treated as untrusted external events and should be correlated, deduplicated where possible and revalidated through authoritative provider data before consequential downstream mutation.
+
+See `docs/ringostat-adapter.md` for the adapter contract and scope decision.
 
 ## Webhooks and recovery
 

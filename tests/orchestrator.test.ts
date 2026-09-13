@@ -23,6 +23,12 @@ describe("orchestrator", () => {
     expect(result.capability?.endpointDigest).toMatch(/^[a-f0-9]{64}$/);
     expect(result.record.transactionReceipt?.decision).toBe("commit");
     expect(result.record.transactionReceipt?.decisionDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.manifest?.verificationState).toBe("verified");
+    expect(result.manifest?.trustLevel).toBe("trusted");
+    expect(result.manifest?.authorizationDecision).toBe("allowed");
+    expect(result.manifest?.freshnessState).toBe("fresh");
+    expect(result.manifest?.constraints).toContain("provider-handshake-required");
+    expect(result.evolution?.authorizationRequired).toBe(true);
   });
 
   it("reuses a terminal result when the same incident is submitted again", async () => {

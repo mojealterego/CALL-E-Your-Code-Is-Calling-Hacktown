@@ -1,12 +1,14 @@
 import type { Incident } from "./domain.js";
-import { validateIncident, canResolve } from "./policy.js";
+import { validateIncident } from "./policy.js";
 import { AuditLedger } from "./ledger.js";
 import { simulateCall } from "./simulator.js";
 import { executeWithCalle } from "./calle.js";
 import { validateOutcome } from "./validation.js";
+import { prepareTransaction, reconcileTransaction } from "./transaction.js";
 
 function failureOutcome(message: string) {
   return validateOutcome({
+    route: "",
     route_acceptance: "unknown",
     eta_update_time: "",
     escalation_needed: "urgent",
@@ -31,12 +33,22 @@ export async function runIncident(
   if (!policy.allowed) {
     const record = ledger.transition(operationKey, "escalated", {
       outcome: failureOutcome(policy.reasons.join("; ")),
+      transactionDecision: "abort",
+      transactionReasons: policy.reasons,
     });
     return { record, reused: false, outcome: record.outcome };
   }
 
   ledger.transition(operationKey, "validated");
-  ledger.transition(operationKey, "approved");
+
+  const transaction = prepareTransaction({
+    transactionId: `TX-${incident.id}`,
+    incidentId: incident.id,
+    participantId: incident.vehicleId,
+    route: incident.proposedRoute,
+    maxEta: incident.maxEta,
+  });
+  ledger.transition(operationKey, "prepared", { transactionId: transaction.transactionId });
   ledger.transition(operationKey, "calling");
 
   try {
@@ -44,16 +56,38 @@ export async function runIncident(
       ? await executeWithCalle(incident, operationKey)
       : { outcome: simulateCall(incident) };
     const outcome = validateOutcome(raw.outcome);
-    const record = ledger.transition(
-      operationKey,
-      canResolve(outcome) ? "resolved" : "escalated",
-      { ...(raw.callId ? { callId: raw.callId } : {}), outcome },
-    );
-    return { record, reused: false, outcome };
+    ledger.transition(operationKey, "verifying", {
+      ...(raw.callId ? { callId: raw.callId } : {}),
+      outcome,
+    });
+
+    const reconciliation = reconcileTransaction(transaction, {
+      route: outcome.route,
+      eta: outcome.eta_update_time,
+      acceptance: outcome.route_acceptance,
+      confidence: outcome.confidence,
+      evidenceSummary: outcome.evidence_summary,
+      taskCompleted: outcome.task_completed,
+      completionConfidence: outcome.completion_confidence,
+    });
+
+    const state = reconciliation.decision === "commit"
+      ? "resolved"
+      : reconciliation.decision === "recover"
+        ? "recovering"
+        : "escalated";
+
+    const record = ledger.transition(operationKey, state, {
+      transactionDecision: reconciliation.decision,
+      transactionReasons: reconciliation.reasons,
+    });
+    return { record, reused: false, outcome, transaction, reconciliation };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown CALL-E execution failure";
-    const record = ledger.transition(operationKey, "escalated", {
+    const record = ledger.transition(operationKey, "recovering", {
       outcome: failureOutcome(message),
+      transactionDecision: "recover",
+      transactionReasons: [message],
     });
     return { record, reused: false, outcome: record.outcome };
   }

@@ -152,6 +152,7 @@ export function buildAssuranceContext(input: {
     createClaim({ subject: input.patientName, predicate: "patient.confirmed", value: input.patientConfirmed ?? "unknown", status: input.patientConfirmed === "yes" ? "true" : "unknown", source: "call-e", evidenceRefs: [input.evidenceSummary], confidence: 0.9, validFrom: now }),
   ];
   const bitemporalFacts: BitemporalFact[] = claims.map((claim, index) => ({ factId: claim.id, value: claim.value, validFrom: claim.validFrom, recordedAt: claim.recordedAt, version: index + 1, source: claim.source }));
-  const retrievedMemory = semanticRag(`${input.appointmentDecision ?? "confirm"} ${input.firstVisit ?? "unknown"} appointment`, memory);
+  const retrievalQuery = [input.appointmentDecision ?? "confirm", input.firstVisit === "yes" ? "first visit" : input.firstVisit === "no" ? "repeat visit" : "unknown visit", "appointment"].join(" ");
+  const retrievedMemory = semanticRag(retrievalQuery, memory);
   return { claims, bitemporalFacts, retrievedMemory, thoughts: buildGoT(claims) };
 }

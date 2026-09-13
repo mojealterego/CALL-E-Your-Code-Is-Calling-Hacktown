@@ -59,10 +59,7 @@ export async function runIncident(
     scope: "route_change",
     constraints: transaction.constraints,
   });
-  ledger.transition(operationKey, "calling", {
-    capabilityId: capability.capabilityId,
-    previousAuditDigest: capability.constraintsDigest,
-  });
+  ledger.transition(operationKey, "calling", { capabilityId: capability.capabilityId });
 
   try {
     const raw = options.live

@@ -14,6 +14,20 @@ const demoIncident: Incident = {
   goal: "Inform the driver about the A4 closure, verify acceptance of Route B, and confirm the revised ETA.",
 };
 
+const liveAppointmentIncident: Incident = {
+  ...demoIncident,
+  vehicleId: "PATIENT-ADAM-MIAUCZYNSKI",
+  closure: "Administrative appointment confirmation.",
+  requestedBy: "clinic-reception-demo",
+  goal: "Confirm the patient's appointment and provide first-visit administrative instructions.",
+  appointment: {
+    clinicName: "Przychodnia Medica Nova",
+    patientName: "Adam Miauczyński",
+    doctorName: "doktor Pawlak",
+    appointmentReference: "TOMORROW-APPOINTMENT-001",
+  },
+};
+
 function isLiveCommand(command: string): boolean {
   const mode = (process.env.CALL_E_MODE ?? "dry-run").toLowerCase();
   if (command === "demo") return false;
@@ -29,14 +43,19 @@ async function main() {
   const live = isLiveCommand(command);
   const ledger = new AuditLedger();
   const incident = live
-    ? { ...demoIncident, phone: process.env.AEGIS_LIVE_PHONE ?? "" }
+    ? { ...liveAppointmentIncident, phone: process.env.AEGIS_LIVE_PHONE ?? "" }
     : demoIncident;
 
   if (live && !incident.phone) throw new Error("AEGIS_LIVE_PHONE is required for live mode");
 
   console.log(`AegisFleet | mode=${live ? "LIVE" : "DRY-RUN"}`);
-  console.log(`Incident=${incident.id} vehicle=${incident.vehicleId}`);
-  console.log(`PREPARE route=${incident.proposedRoute} maxEta=${incident.maxEta}`);
+  if (incident.appointment) {
+    console.log(`APPOINTMENT clinic=${incident.appointment.clinicName} doctor=${incident.appointment.doctorName}`);
+    console.log(`PATIENT ${incident.appointment.patientName}`);
+  } else {
+    console.log(`Incident=${incident.id} vehicle=${incident.vehicleId}`);
+    console.log(`PREPARE route=${incident.proposedRoute} maxEta=${incident.maxEta}`);
+  }
 
   const result = await runIncident(incident, { live, ledger });
 
@@ -56,13 +75,7 @@ async function main() {
   }, null, 2));
 
   if (!live) console.log("DRY-RUN GUARANTEE: no provider request and no phone call were made.");
-
-  // A live workflow is only successful if CALL-E actually accepted a call task.
-  // Business recovery is valid after a real call exists; provider/auth failures
-  // without a call id must make the CI job fail instead of appearing successful.
-  if (live && !result.record.callId) {
-    throw new Error("Live CALL-E test did not create a call task; no outbound call was placed.");
-  }
+  if (live && !result.record.callId) throw new Error("Live CALL-E test did not create a call task; no outbound call was placed.");
 }
 
 main().catch((error) => {

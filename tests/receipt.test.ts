@@ -40,4 +40,28 @@ describe("transaction receipts", () => {
     expect(commit.decisionDigest).not.toBe(abort.decisionDigest);
     expect(commit.receiptId).not.toBe(abort.receiptId);
   });
+
+  it("changes the transaction binding when the endpoint-bound capability changes", () => {
+    const base = {
+      ...transaction,
+      capability: {
+        capabilityId: "cap-1",
+        participantId: "vehicle-1",
+        endpointDigest: "endpoint-a",
+        scope: "route_change",
+        constraintsDigest: "constraints-a",
+        issuedAt: "2026-09-13T00:00:00.000Z",
+        expiresAt: "2026-09-13T00:05:00.000Z",
+      },
+    };
+    const changedEndpoint = {
+      ...base,
+      capability: { ...base.capability, endpointDigest: "endpoint-b" },
+    };
+    const first = createTransactionReceipt({ transactionId: "TX-1", transaction: base, evidence, decision: "commit", issuedAt: "2026-09-13T00:00:00.000Z" });
+    const second = createTransactionReceipt({ transactionId: "TX-1", transaction: changedEndpoint, evidence, decision: "commit", issuedAt: "2026-09-13T00:00:00.000Z" });
+    expect(first.transactionDigest).not.toBe(second.transactionDigest);
+    expect(first.decisionDigest).not.toBe(second.decisionDigest);
+    expect(first.receiptId).not.toBe(second.receiptId);
+  });
 });

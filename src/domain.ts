@@ -60,6 +60,7 @@ export interface CallOutcome {
   task_completed?: boolean;
   failure_code?: string;
   failure_message?: string;
+  patient_confirmed?: AppointmentConfirmation;
   appointment_confirmed?: AppointmentConfirmation;
   doctor_confirmed?: string;
   first_visit?: AppointmentConfirmation;
@@ -109,6 +110,7 @@ export const APPOINTMENT_RESULT_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
+    "patient_confirmed",
     "appointment_confirmed",
     "doctor_confirmed",
     "first_visit",
@@ -126,19 +128,20 @@ export const APPOINTMENT_RESULT_SCHEMA = {
     "confidence"
   ],
   properties: {
-    appointment_confirmed: { type: "string", enum: ["yes", "no", "unknown"] },
-    doctor_confirmed: { type: "string", description: "Doctor name confirmed in the conversation; empty only if not established." },
-    first_visit: { type: "string", enum: ["yes", "no", "unknown"] },
+    patient_confirmed: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only when the person confirms they are the named patient. If identity is not established, use unknown. Do not disclose appointment details before identity is established." },
+    appointment_confirmed: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only for a clear confirmation of the prepared appointment, no when the patient clearly declines the current appointment, and unknown when intent is unclear." },
+    doctor_confirmed: { type: "string", description: "Doctor name explicitly confirmed during the conversation; empty if not established." },
+    first_visit: { type: "string", enum: ["yes", "no", "unknown"], description: "Whether the patient explicitly says this is their first visit to the clinic." },
     identity_document_reminder_given: { type: "boolean" },
     arrive_30_minutes_early: { type: "boolean" },
     registration_reminder_given: { type: "boolean" },
     information_form_reminder_given: { type: "boolean" },
     conversation_completed: { type: "boolean" },
-    appointment_decision: { type: "string", enum: ["confirm", "reschedule", "cancel", "unknown"] },
+    appointment_decision: { type: "string", enum: ["confirm", "reschedule", "cancel", "unknown"], description: "Final business outcome of the call." },
     reschedule_requested: { type: "boolean" },
     reschedule_completed: { type: "boolean" },
-    new_appointment_date: { type: "string" },
-    new_appointment_time: { type: "string" },
+    new_appointment_date: { type: "string", description: "Selected replacement date in YYYY-MM-DD, or empty when no replacement was booked." },
+    new_appointment_time: { type: "string", description: "Selected replacement time in HH:MM, or empty when no replacement was booked." },
     evidence_summary: { type: "string", minLength: 1 },
     confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
   }

@@ -1,7 +1,7 @@
 import type { CallOutcome, Incident } from "./domain.js";
 import type { CalleCallStatus } from "./calle.js";
 import { AuditLedger } from "./ledger.js";
-import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointmentTransaction, reconcileTransaction } from "./transaction.js";
+import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointmentTransaction, reconcileTransaction, type PreparedAppointmentTransaction, type PreparedTransaction } from "./transaction.js";
 import { createTransactionReceipt } from "./receipt.js";
 import { validateOutcome } from "./validation.js";
 
@@ -63,12 +63,8 @@ function outcomeFromAuthoritativeBody(body: Record<string, unknown>, appointment
 export async function fetchAuthoritativeCall(callId: string, apiKey = process.env.CALLE_API_KEY, appointment = false): Promise<AuthoritativeCall> {
   if (!apiKey) throw new Error("CALLE_API_KEY is required for authoritative recovery");
   if (!/^call_[A-Za-z0-9_-]+$/.test(callId)) throw new Error("invalid CALL-E call id");
-
-  const response = await fetch(`https://api.heycall-e.com/v1/calls/${encodeURIComponent(callId)}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
+  const response = await fetch(`https://api.heycall-e.com/v1/calls/${encodeURIComponent(callId)}`, { headers: { Authorization: `Bearer ${apiKey}` } });
   if (!response.ok) throw new Error(`CALL-E authoritative fetch failed: HTTP ${response.status}`);
-
   const body = await response.json() as Record<string, unknown>;
   return { id: callId, status: statusOf(body.status), outcome: outcomeFromAuthoritativeBody(body, appointment) };
 }
@@ -83,28 +79,14 @@ export async function recoverIncident(
   if (current.state !== "recovering") throw new Error(`incident is not recoverable from state ${current.state}`);
   if (!current.callId) throw new Error("cannot recover without an existing CALL-E call id");
 
-  const isAppointment = incident.appointment !== undefined;
+  const appointment = incident.appointment;
+  const isAppointment = appointment !== undefined;
   const transaction = isAppointment
-    ? prepareAppointmentTransaction({
-        transactionId: current.transactionId ?? `TX-${incident.id}`,
-        incidentId: incident.id,
-        participantId: incident.vehicleId,
-        constraints: incident.appointment,
-      })
-    : prepareTransaction({
-        transactionId: current.transactionId ?? `TX-${incident.id}`,
-        incidentId: incident.id,
-        participantId: incident.vehicleId,
-        route: incident.proposedRoute,
-        maxEta: incident.maxEta,
-      });
+    ? prepareAppointmentTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: appointment })
+    : prepareTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, route: incident.proposedRoute, maxEta: incident.maxEta });
 
   const authoritative = await fetchAuthoritativeCall(current.callId, apiKey, isAppointment);
-  ledger.transition(operationKey, "verifying", {
-    outcome: authoritative.outcome,
-    callId: authoritative.id,
-    transactionId: transaction.transactionId,
-  });
+  ledger.transition(operationKey, "verifying", { outcome: authoritative.outcome, callId: authoritative.id, transactionId: transaction.transactionId });
 
   const evidence = {
     route: authoritative.outcome.route,
@@ -133,8 +115,8 @@ export async function recoverIncident(
   };
 
   const reconciliation = isAppointment
-    ? reconcileAppointmentTransaction(transaction, evidence)
-    : reconcileTransaction(transaction, evidence);
+    ? reconcileAppointmentTransaction(transaction as PreparedAppointmentTransaction, evidence)
+    : reconcileTransaction(transaction as PreparedTransaction, evidence);
   const receipt = createTransactionReceipt({ transactionId: transaction.transactionId, transaction, evidence, decision: reconciliation.decision });
   const state = reconciliation.decision === "commit" ? "resolved" : reconciliation.decision === "abort" ? "escalated" : "recovering";
   const record = ledger.transition(operationKey, state, {

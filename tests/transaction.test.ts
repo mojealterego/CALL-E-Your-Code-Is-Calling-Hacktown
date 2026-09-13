@@ -10,7 +10,7 @@ describe("voice transaction reconciliation", () => {
     maxEta: "19:00",
   });
 
-  it("commits matching high-confidence evidence", () => {
+  it("commits matching high-confidence evidence from a completed call", () => {
     expect(reconcileTransaction(tx, {
       route: "B",
       eta: "18:40",
@@ -39,11 +39,12 @@ describe("voice transaction reconciliation", () => {
       acceptance: "unknown",
       confidence: "unknown",
       evidenceSummary: "Call state could not establish the route.",
+      taskCompleted: false,
     });
     expect(result.decision).toBe("recover");
   });
 
-  it("aborts a failed CALL-E task even when the conversation appears to match", () => {
+  it("recovers a failed CALL-E task even when the conversation appears to match", () => {
     const result = reconcileTransaction(tx, {
       route: "B",
       eta: "18:40",
@@ -52,7 +53,7 @@ describe("voice transaction reconciliation", () => {
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
       taskCompleted: false,
     });
-    expect(result.decision).toBe("abort");
-    expect(result.reasons).toContain("CALL-E task did not complete successfully");
+    expect(result.decision).toBe("recover");
+    expect(result.reasons).toContain("CALL-E task did not establish a successful terminal completion");
   });
 });

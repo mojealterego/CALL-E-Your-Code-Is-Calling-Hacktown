@@ -44,18 +44,25 @@ export async function executeWithCalle(
 
   const callValue = call as unknown as Record<string, unknown>;
   const structured = extractStructuredResult(call);
+  const evidence = Array.isArray(callValue.evidence)
+    ? callValue.evidence.filter((item): item is string => typeof item === "string")
+    : undefined;
   const rawOutcome = structured && typeof structured === "object"
-    ? { ...(structured as Record<string, unknown>),
+    ? {
+        ...(structured as Record<string, unknown>),
         task_completed: callValue.task_completed,
         completion_confidence: callValue.completion_confidence,
+        evidence,
         failure_code: callValue.failure_code,
-        failure_message: callValue.failure_message }
+        failure_message: callValue.failure_message,
+      }
     : {
         route: "",
         route_acceptance: "unknown",
         eta_update_time: "",
         escalation_needed: "urgent",
         evidence_summary: stringField(callValue, "failure_message", "failureMessage") ?? "CALL-E returned no structured result",
+        evidence,
         confidence: "unknown",
         task_completed: callValue.task_completed,
         completion_confidence: callValue.completion_confidence,

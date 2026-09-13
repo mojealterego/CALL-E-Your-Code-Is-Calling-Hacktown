@@ -40,6 +40,7 @@ export interface ObservedEvidence {
   taskCompleted?: boolean;
   completionConfidence?: unknown;
   providerStatus?: "completed" | "failed" | "canceled" | "queued" | "in_progress" | "unknown";
+  patientConfirmed?: "yes" | "no" | "unknown";
   appointmentConfirmed?: "yes" | "no" | "unknown";
   doctorConfirmed?: string;
   firstVisit?: "yes" | "no" | "unknown";
@@ -72,6 +73,7 @@ export function prepareAppointmentTransaction(input: { transactionId: string; in
   if (!input.transactionId || !input.incidentId || !input.participantId) throw new Error("transaction identity is required");
   if (!input.constraints.clinicName || !input.constraints.patientName || !input.constraints.doctorName || !input.constraints.appointmentDate || !input.constraints.appointmentTime) throw new Error("valid appointment constraints are required");
   if (!Array.isArray(input.constraints.availableSlots) || input.constraints.availableSlots.length === 0) throw new Error("appointment availability is required");
+  if (input.constraints.availableSlots.some((slot) => !/^\d{4}-\d{2}-\d{2}$/.test(slot.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.time))) throw new Error("appointment availability contains an invalid slot");
   return { transactionId: input.transactionId, incidentId: input.incidentId, participantId: input.participantId, action: "appointment_confirmation", constraints: input.constraints, status: "prepared" };
 }
 
@@ -82,6 +84,7 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
   if (evidence.taskCompleted !== true) reasons.push("CALL-E task did not establish a successful terminal completion");
   if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
   if (!evidence.evidenceItems?.length) reasons.push("CALL-E terminal evidence is missing");
+  if (evidence.patientConfirmed !== "yes") reasons.push("patient identity was not positively confirmed");
   if (evidence.doctorConfirmed !== transaction.constraints.doctorName) reasons.push("confirmed doctor does not match prepared appointment");
   if (evidence.conversationCompleted !== true) reasons.push("conversation was not cleanly completed");
 
@@ -95,19 +98,26 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
     if (evidence.rescheduleCompleted !== true) reasons.push("reschedule was not completed");
     const selected = transaction.constraints.availableSlots.some((slot) => slot.date === evidence.newAppointmentDate && slot.time === evidence.newAppointmentTime);
     if (!selected) reasons.push("selected reschedule slot is not in prepared availability");
-    if (reasons.length > 0) return evidence.newAppointmentDate === undefined || evidence.newAppointmentTime === undefined ? { decision: "recover", reasons } : { decision: "abort", reasons };
+    if (reasons.length > 0) return { decision: "abort", reasons };
     return { decision: "commit", reasons: [`patient accepted ${evidence.newAppointmentDate} at ${evidence.newAppointmentTime}; appointment change is authorized by the prepared availability`] };
   }
 
-  if (evidence.appointmentDecision !== "confirm") {
-    reasons.push("appointment decision is unknown");
-  }
+  if (evidence.appointmentDecision !== "confirm") reasons.push("appointment decision is unknown");
   if (evidence.appointmentConfirmed !== "yes") reasons.push("patient did not positively confirm the appointment");
   if (evidence.firstVisit === "yes" && evidence.identityDocumentReminderGiven !== true) reasons.push("first-visit identity document reminder was not given");
   if (evidence.firstVisit === "yes" && evidence.arrive30MinutesEarly !== true) reasons.push("first-visit 30-minute early-arrival instruction was not given");
   if (evidence.firstVisit === "yes" && evidence.registrationReminderGiven !== true) reasons.push("first-visit registration instruction was not given");
   if (evidence.firstVisit === "yes" && evidence.informationFormReminderGiven !== true) reasons.push("first-visit information-form instruction was not given");
-  const incomplete = evidence.providerStatus !== "completed" || evidence.appointmentConfirmed === "unknown" || evidence.doctorConfirmed === undefined || evidence.firstVisit === "unknown" || evidence.appointmentDecision === "unknown" || evidence.taskCompleted !== true || !evidence.evidenceItems?.length;
+  if (evidence.firstVisit === "unknown") reasons.push("first-visit status is unknown");
+
+  const incomplete = evidence.providerStatus !== "completed"
+    || evidence.patientConfirmed !== "yes"
+    || evidence.appointmentConfirmed === "unknown"
+    || evidence.doctorConfirmed === undefined
+    || evidence.firstVisit === "unknown"
+    || evidence.appointmentDecision === "unknown"
+    || evidence.taskCompleted !== true
+    || !evidence.evidenceItems?.length;
   if (incomplete) return { decision: "recover", reasons };
   if (reasons.length > 0) return { decision: "abort", reasons };
   return { decision: "commit", reasons: ["patient confirmed the prepared appointment and all applicable administrative conditions"] };

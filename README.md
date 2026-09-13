@@ -1,47 +1,56 @@
-# AegisFleet — Incident Voice Command
+# AegisFleet — Voice Transaction Coordinator
 
-**Governed autonomous phone coordination for logistics exceptions, built with CALL-E.**
+**A governed transaction layer for real-world phone actions, built with CALL-E.**
 
-AegisFleet turns a logistics incident into a controlled phone workflow: validate the incident, reserve a stable operation identity, execute a bounded phone task, validate the structured outcome, require evidence for automatic resolution, and escalate whenever the evidence is insufficient.
+AegisFleet treats a phone call as an unreliable real-world transaction participant. CALL-E performs the conversation; AegisFleet decides whether the evidence is sufficient to change the prepared business state.
 
-> **Safety default:** `npm run demo` is fully local. It makes zero network requests and places zero phone calls.
+> **Core boundary:** CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change.
 
-## Core thesis
+> **Safety default:** `npm run demo` is fully local. It places zero phone calls and does not require a CALL-E API key.
 
-A voice agent is only useful to an enterprise when its output can be bounded and connected safely to the next business action. AegisFleet therefore focuses on the control plane around the phone call rather than on conversation quality alone.
+## Transaction model
 
 ```text
-incident
+INTENT
   ↓
-policy gate
+PREPARE — freeze exact route + ETA constraint
   ↓
-idempotency reservation
+CALL — CALL-E contacts the authorized participant
   ↓
-CALL-E / deterministic simulator
+VERIFY — validate terminal state + structured evidence
   ↓
-strict outcome validation
-  ↓
-evidence + confidence gate
-  ├── resolved → ERP-ready decision
-  └── escalated → human action
-  ↓
-audit ledger
+RECONCILE
+  ├── COMMIT  → prepared operational state may change
+  ├── ABORT   → evidence conflicts with the prepared state
+  └── RECOVER → execution/evidence is incomplete; do not duplicate the call
 ```
+
+The phone conversation is deliberately **not** the commit boundary. A positive conversational answer is insufficient unless it matches the prepared transaction constraints and CALL-E reports a successful terminal completion.
+
+## Why this matters
+
+Traditional voice automation often collapses three different facts into one:
+
+1. the call happened;
+2. the recipient said something;
+3. the business system is now allowed to change.
+
+AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or conflicting call from silently becoming an operational state change.
 
 ## Implemented
 
-- TypeScript domain model and explicit incident state machine.
-- Policy gate with E.164 validation, purpose-bounded goals, live-mode opt-in and fixture-number protection.
-- Deterministic dry-run simulator that follows the same outcome-validation path as live execution.
-- CALL-E server SDK adapter with strict result extraction and validation.
-- JSON Schema contract with `additionalProperties: false` and explicit `unknown` states.
-- Application-level idempotency reservation before provider I/O.
-- Evidence-backed automatic resolution; uncertainty never becomes an implicit success/failure.
-- Human escalation on policy rejection, execution errors, insufficient evidence, low confidence or explicit escalation.
-- Replay-aware webhook contract and event-ID deduplication.
-- Hash-linked audit records for tamper-evident sequencing inside the prototype ledger.
-- Automated regression tests and GitHub Actions CI.
-- Grant proposal, architecture, security model and judge-ready three-minute demo script.
+- Explicit transaction preparation with immutable route/ETA constraints.
+- CALL-E server SDK execution with E.164 recipients, region and locale.
+- Provider-side idempotency key for safe retries of the same logical operation.
+- Strict JSON Schema with explicit `unknown` states.
+- Terminal `task_completed`, completion-confidence and CALL-E evidence captured from the provider result.
+- Deterministic reconciliation producing `commit`, `abort` or `recover`.
+- `RECOVER` for incomplete/uncertain provider execution instead of accidental retry-and-duplicate behavior.
+- Append-only, hash-linked prototype audit history.
+- Current CALL-E webhook envelope validation and event-ID/header binding.
+- Deterministic dry-run path using the same validation and reconciliation pipeline.
+- Regression tests for commit, conflict, recovery, idempotency and webhook safety.
+- Explicit live-mode opt-in; no silent fallback from live to dry-run.
 
 ## Quick start
 
@@ -52,42 +61,93 @@ npm test
 npm run typecheck
 ```
 
-The demo creates a synthetic A4 closure incident and shows the complete governed lifecycle without calling CALL-E or a telephone recipient.
+The demo uses a synthetic A4 closure incident and performs no provider I/O.
 
 ## Live CALL-E execution
 
 1. Copy `.env.example` to `.env`.
-2. Add a valid `CALLE_API_KEY`.
-3. Set a provisioned test number with `AEGIS_LIVE_PHONE`.
-4. Run `npm run live`.
+2. Set `CALLE_API_KEY`.
+3. Set `AEGIS_LIVE_PHONE` to an authorized E.164 test recipient.
+4. Optionally set `CALLE_REGION` and `CALLE_LOCALE`.
+5. Set `CALL_E_MODE=live`.
+6. Run:
 
-Live mode is intentionally explicit and does not silently downgrade to dry-run. Invalid configuration fails before provider I/O.
+```bash
+npm run live
+```
 
-## Result contract
+Live execution is intentionally explicit because CALL-E can place real outbound phone calls. The server-side API key is never intended for frontend use.
+
+## Example transaction receipt
 
 ```json
 {
-  "route_acceptance": "yes",
-  "eta_update_time": "16:40",
-  "escalation_needed": "none",
-  "evidence_summary": "Driver confirmed the diversion and stated the revised ETA is 16:40.",
-  "confidence": "high"
+  "transactionId": "TX-AF-DEMO-0001",
+  "decision": "commit",
+  "prepared": {
+    "route": "B",
+    "maxEta": "19:00"
+  },
+  "observed": {
+    "route": "B",
+    "eta": "18:40",
+    "acceptance": "yes",
+    "confidence": "high"
+  },
+  "provider": {
+    "callId": "call_123"
+  }
 }
 ```
 
-Automatic resolution requires all five conditions: acceptance = `yes`, non-empty ETA, escalation = `none`, non-empty evidence, and confidence = `high`. Otherwise the incident becomes `escalated`.
+The receipt is an **operational decision record**, not a claim of legal contractual binding.
+
+## Failure semantics
+
+### COMMIT
+
+Only when the participant positively accepts the prepared change, the observed route matches the prepared route, the ETA satisfies the prepared maximum, evidence is sufficient, confidence is high, and CALL-E reports successful terminal completion.
+
+### ABORT
+
+Used when terminal evidence is complete but conflicts with the prepared transaction—for example, the participant accepts a different route.
+
+### RECOVER
+
+Used when the execution or evidence is incomplete or uncertain. Recovery must re-fetch/reconcile the existing CALL-E call before any new outbound call is considered.
 
 ## Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) for the runtime model and CALL-E integration boundary.
+```text
+                    ┌─────────────────────┐
+                    │  Prepared intent    │
+                    │  route + ETA limit  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │    AegisFleet       │
+                    │ policy + idempotency│
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │       CALL-E        │
+                    │ real phone runtime  │
+                    └──────────┬──────────┘
+                               │
+                     terminal evidence
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │    Reconciliation   │
+                    │ evidence vs intent  │
+                    └──────┬─────┬─────┬──┘
+                           /      │      \
+                       COMMIT   ABORT   RECOVER
+```
 
-## Security
-
-See [`docs/security.md`](docs/security.md). The prototype deliberately does not claim provider signature verification, persistent enterprise storage, RBAC, or production-grade webhook infrastructure unless those controls are actually configured.
-
-## Demo
-
-See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is under three minutes and demonstrates the safety gate, structured outcome contract, idempotency behavior and impact thesis.
+Provider-specific behavior is isolated in `src/calle.ts`. Business transaction policy lives independently in `src/transaction.ts` and `src/orchestrator.ts`.
 
 ## Repository layout
 
@@ -108,43 +168,66 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   ├── orchestrator.ts
 │   ├── policy.ts
 │   ├── simulator.ts
+│   ├── transaction.ts
 │   ├── validation.ts
 │   └── webhook.ts
 ├── tests/
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
 │   ├── policy.test.ts
-│   └── validation.test.ts
+│   ├── transaction.test.ts
+│   ├── validation.test.ts
+│   └── webhook.test.ts
 ├── .env.example
 ├── .gitignore
 ├── package.json
-├── tsconfig.json
-└── vitest.config.ts
+└── tsconfig.json
 ```
 
-## CALL-E integration note
+## CALL-E integration
 
-The project treats CALL-E as the phone-execution provider. The current prototype uses its TypeScript server SDK for backend-controlled execution. The documented MCP lifecycle is `plan_call → run_call → get_call_run`; the repository keeps provider-specific concerns behind `src/calle.ts` so the business policy remains independent of the transport mechanism.
+The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. The current SDK exposes terminal `taskCompleted`, `completionConfidence` and `evidence` alongside the structured result.
 
-## Submission discipline
+CALL-E's current public SDK release is `0.7.0`; the project pins the dependency range to that current stable line rather than the older prototype `0.2.x` API. The generic one-shot Calls API remains the execution primitive used here.
 
-The repository distinguishes between **implemented evidence** and **deployment/submission artifacts**. It does not fabricate a deployed URL, live credentials, a completed contribution PR, or a recorded video. Those are final environment-specific steps.
+## Security boundary
 
-For the community contribution requirement, the intended target is `CALLE-AI/awesome-phone-call-agents`. A contribution PR should be opened from a dedicated branch after the final local/CI verification and should link back to this repository.
+- API credentials stay server-side.
+- Live execution requires an explicit environment flag and an explicit recipient phone.
+- Fixture/example phone numbers are rejected in live mode.
+- Webhook events are treated as untrusted notifications; event IDs are deduplicated and bound to the required header.
+- Business state is never committed from a webhook alone; authoritative call state must be reconciled before committing.
+- The prototype does not claim production RBAC, persistent enterprise storage, legal enforceability, or a production-grade webhook receiver.
+
+## Demo target
+
+The intended three-minute demonstration is:
+
+```text
+0:00  A4 closure creates an operational exception
+0:15  PREPARE — Route B / ETA ≤ 19:00
+0:30  CALL-E — real authorized phone call
+1:10  EVIDENCE — Route B / 18:40 / accepted
+1:30  RECONCILE
+1:45  COMMIT
+2:00  CONFLICT scenario → ABORT
+2:25  UNKNOWN scenario → RECOVER
+2:50  Final transaction receipt
+```
+
+The critical demonstration is that a phone call can produce evidence without being granted direct authority to mutate the business state.
 
 ## Production hardening backlog
 
-The prototype intentionally isolates the remaining enterprise work:
-
-- transactional persistent idempotency store;
-- durable audit storage and verification tooling;
-- authenticated provider webhook ingestion;
-- RBAC and organization-level policy configuration;
-- secrets management and rotation;
-- retention/deletion policies and jurisdiction-specific privacy controls;
-- operator console and global kill switch;
-- TMS/ERP write-back connectors;
-- load, fault-injection and red-team evaluation.
+- Durable transactional idempotency storage.
+- Persistent audit storage and independent digest verification.
+- Authoritative CALL-E re-fetch worker for webhook-driven reconciliation.
+- RBAC and organization-level policy configuration.
+- Secrets management and rotation.
+- Retention/deletion and jurisdiction-specific privacy controls.
+- Operator console and global kill switch.
+- TMS/ERP write-back connectors.
+- Fault injection, load testing and red-team evaluation.
 
 ## License
 

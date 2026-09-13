@@ -99,7 +99,6 @@ export async function executeWithCalle(
         confidence: "unknown",
         ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
         ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
-        ...(evidence !== undefined ? { evidence } : {}),
         ...(failureCode !== undefined ? { failure_code: failureCode } : {}),
         ...(failureMessage !== undefined ? { failure_message: failureMessage } : {}),
       };

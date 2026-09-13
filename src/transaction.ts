@@ -68,13 +68,19 @@ export function reconcileTransaction(
 
   if (evidence.acceptance !== "yes") reasons.push("participant did not positively accept the proposed change");
   if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
-  if (evidence.taskCompleted === false) reasons.push("CALL-E task did not complete successfully");
+  if (evidence.taskCompleted !== true) reasons.push("CALL-E task did not establish a successful terminal completion");
   if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
   if (evidence.route !== transaction.constraints.route) reasons.push("observed route does not match prepared route");
   if (observedEta === undefined) reasons.push("observed ETA is missing or invalid");
   else if (maxEta !== undefined && observedEta > maxEta) reasons.push("observed ETA exceeds prepared constraint");
 
-  if (evidence.acceptance === "unknown" || evidence.confidence === "unknown" || evidence.route === undefined || observedEta === undefined) {
+  if (
+    evidence.acceptance === "unknown" ||
+    evidence.confidence === "unknown" ||
+    evidence.route === undefined ||
+    observedEta === undefined ||
+    evidence.taskCompleted !== true
+  ) {
     return { decision: "recover", reasons };
   }
   if (reasons.length > 0) return { decision: "abort", reasons };

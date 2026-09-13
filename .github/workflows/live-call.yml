@@ -1,0 +1,43 @@
+name: LIVE CALL-E Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Explicitly authorize ONE live CALL-E test call"
+        required: true
+        type: choice
+        options:
+          - I AUTHORIZE ONE TEST CALL
+
+permissions:
+  contents: read
+
+jobs:
+  live-call:
+    if: ${{ inputs.confirmation == 'I AUTHORIZE ONE TEST CALL' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CALLE_API_KEY: ${{ secrets.CALLE_API_KEY }}
+      CALL_E_MODE: live
+      AEGIS_LIVE_PHONE: ${{ secrets.AEGIS_LIVE_PHONE }}
+      CALLE_REGION: PL
+      CALLE_LOCALE: pl-PL
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Validate configuration
+        shell: bash
+        run: |
+          test -n "$CALLE_API_KEY" || { echo "CALLE_API_KEY secret is missing"; exit 1; }
+          test -n "$AEGIS_LIVE_PHONE" || { echo "AEGIS_LIVE_PHONE secret is missing"; exit 1; }
+          printf '%s' "$AEGIS_LIVE_PHONE" | grep -Eq '^\+[1-9][0-9]{7,14}$' || { echo "AEGIS_LIVE_PHONE must be E.164"; exit 1; }
+      - name: Run exactly one live transaction
+        run: npm run live

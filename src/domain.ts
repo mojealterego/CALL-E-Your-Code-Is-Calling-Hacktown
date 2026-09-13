@@ -12,6 +12,11 @@ export type RouteAcceptance = "yes" | "no" | "unknown";
 export type EscalationLevel = "urgent" | "normal" | "none" | "unknown";
 export type ConfidenceLabel = "high" | "medium" | "low" | "unknown";
 
+export interface CompletionConfidence {
+  score?: number;
+  label?: string;
+}
+
 export interface Incident {
   id: string;
   vehicleId: string;
@@ -32,7 +37,7 @@ export interface CallOutcome {
   escalation_needed: EscalationLevel;
   evidence_summary: string;
   confidence: ConfidenceLabel;
-  completion_confidence?: string;
+  completion_confidence?: CompletionConfidence | string;
   task_completed?: boolean;
   failure_code?: string;
   failure_message?: string;
@@ -64,17 +69,18 @@ export const RESULT_SCHEMA = {
     "confidence"
   ],
   properties: {
-    route: { type: "string" },
+    route: { type: "string", description: "The exact route the recipient explicitly discussed or accepted. Use an empty string if not established." },
     route_acceptance: {
       type: "string",
-      enum: ["yes", "no", "unknown"]
+      enum: ["yes", "no", "unknown"],
+      description: "Use yes only when the recipient clearly accepts the proposed route; no when they clearly reject it; unknown when the call does not establish this."
     },
-    eta_update_time: { type: "string" },
+    eta_update_time: { type: "string", description: "The revised ETA explicitly stated by the recipient, preferably HH:MM; use an empty string if not established." },
     escalation_needed: {
       type: "string",
       enum: ["urgent", "normal", "none", "unknown"]
     },
-    evidence_summary: { type: "string", minLength: 1 },
+    evidence_summary: { type: "string", minLength: 1, description: "Concise evidence grounded in what the recipient actually said; never infer missing facts." },
     confidence: {
       type: "string",
       enum: ["high", "medium", "low", "unknown"]

@@ -16,9 +16,9 @@ Phone work becomes dangerous when a conversation is treated as equivalent to a c
 
 AegisFleet introduces a prepare/verify/commit boundary around CALL-E:
 
-`intent → PREPARE → CALL-E → terminal evidence → RECONCILE → COMMIT / ABORT / RECOVER`
+`intent → PREPARE → CALL-E → terminal evidence → RECONCILE → COMMIT / ABORT / RECOVER → RECEIPT`
 
-Before the call, the system freezes the exact operational constraints. After the call, it compares the provider evidence with those constraints. Only a matching, high-confidence, successfully completed call can reach `COMMIT`.
+Before the call, the system freezes the exact operational constraints. After the call, it compares authoritative provider evidence with those constraints. Only a matching, high-confidence, successfully completed call can reach `COMMIT`.
 
 ## What the judges should notice
 
@@ -28,8 +28,9 @@ Before the call, the system freezes the exact operational constraints. After the
 4. **Safety by construction:** live mode is explicit; authorized E.164 recipients are required; fixture numbers are blocked; uncertain execution becomes `RECOVER`.
 5. **Machine-checkable evidence:** route, acceptance, ETA, confidence, terminal completion and provider evidence are preserved for reconciliation.
 6. **Failure semantics:** conflicting evidence produces `ABORT`; incomplete evidence produces `RECOVER`; neither silently becomes success.
-7. **Auditability:** the prototype maintains append-only, hash-linked transition history and a transaction receipt.
+7. **Verifiable auditability:** transitions are append-only and hash-linked, while the transaction receipt cryptographically binds the prepared transaction, observed evidence and final decision.
 8. **Reusable architecture:** the transaction layer is provider-independent and the CALL-E adapter is isolated from business policy.
+9. **Recovery discipline:** the project includes an authoritative CALL-E re-fetch primitive so a webhook is treated as a notification rather than a state-of-truth commit signal.
 
 ## Demo
 
@@ -53,12 +54,12 @@ The hackathon requires a contribution PR to:
 
 `CALLE-AI/awesome-phone-call-agents`
 
-The project repository is the source-development repository. The community contribution must be opened against the appropriate `apps/` contribution area and must document setup, side effects, cancellation/recovery behavior, credentials and dry-run/preview behavior.
+The community entry should be an `apps/` contribution documenting setup, real-call side effects, cancellation/recovery behavior, credentials and dry-run/preview behavior.
 
 ## Devpost text
 
-AegisFleet is a voice transaction coordinator for real-world phone work. When a logistics exception occurs, the system freezes the exact operational intent, uses CALL-E to contact the authorized participant, collects structured terminal evidence, reconciles that evidence against the prepared state, and produces one of three explicit decisions: COMMIT, ABORT, or RECOVER.
+AegisFleet is a voice transaction coordinator for real-world phone work. When a logistics exception occurs, the system freezes the exact operational intent, uses CALL-E to contact the authorized participant, collects structured terminal evidence, reconciles that evidence against the prepared state, and produces one of three explicit decisions: COMMIT, ABORT, or RECOVER. A cryptographic receipt binds the decision to the prepared intent and observed evidence.
 
-The key innovation is treating the phone call as an unreliable participant in a distributed real-world transaction. CALL-E owns the conversation; AegisFleet owns the commit boundary. A participant can disagree with the prepared route, the call can fail, or the evidence can remain unknown without the system turning that uncertainty into an automatic business action.
+The key innovation is treating the phone call as an unreliable participant in a distributed real-world transaction. CALL-E owns the conversation; AegisFleet owns the commit boundary. A participant can disagree with the prepared route, the call can fail, or the evidence can remain unknown without the system turning that uncertainty into an automatic business action. Recovery re-fetches authoritative provider state before a new outbound attempt is considered.
 
-Built with TypeScript, the CALL-E server SDK, strict JSON Schema contracts, provider idempotency, transaction reconciliation, append-only audit history, webhook event validation and deterministic tests.
+Built with TypeScript, the CALL-E server SDK, strict JSON Schema contracts, provider idempotency, transaction reconciliation, append-only audit history, cryptographic receipts, webhook event validation, an authoritative recovery fetch primitive and deterministic tests.

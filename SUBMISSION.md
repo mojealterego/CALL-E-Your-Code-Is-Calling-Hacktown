@@ -56,7 +56,7 @@ The hackathon requires a contribution PR to:
 
 `CALLE-AI/awesome-phone-call-agents`
 
-The community entry should be an `apps/` contribution documenting setup, real-call side effects, cancellation/recovery behavior, credentials and dry-run/preview behavior. The reusable contribution should focus on the transaction-reconciliation pattern rather than duplicating a generic logistics app.
+The community contribution is prepared as a reusable `skills/` entry at `skills/voice-transaction-coordinator/`, documenting the transaction-reconciliation pattern rather than duplicating a generic logistics app. It covers setup, real-call side effects, cancellation/recovery behavior, credentials and dry-run/preview behavior.
 
 ## Devpost text
 

@@ -2,16 +2,31 @@ import { describe, expect, it } from "vitest";
 import { WebhookDeduper, validateTerminalEvent } from "../src/webhook.js";
 
 describe("webhook safety boundary", () => {
-  it("accepts supported terminal status values", () => {
-    expect(validateTerminalEvent({ id: "evt-1", call_id: "call-1", status: "completed" })).toEqual({
-      id: "evt-1", call_id: "call-1", status: "completed"
+  it("accepts the current CALL-E terminal event envelope", () => {
+    expect(validateTerminalEvent({
+      id: "evt-1",
+      type: "call.completed",
+      data: { id: "call-1", status: "completed" },
+    }, "evt-1")).toEqual({
+      id: "evt-1",
+      type: "call.completed",
+      call_id: "call-1",
+      status: "completed",
     });
-    expect(validateTerminalEvent({ id: "evt-2", call_id: "call-2", status: "failed" }).status).toBe("failed");
   });
 
-  it("rejects malformed or unsupported events", () => {
+  it("rejects malformed, mismatched, or unsupported events", () => {
     expect(() => validateTerminalEvent({ id: "evt-1" })).toThrow();
-    expect(() => validateTerminalEvent({ id: "evt-1", call_id: "call-1", status: "weird" })).toThrow();
+    expect(() => validateTerminalEvent({
+      id: "evt-1",
+      type: "call.completed",
+      data: { id: "call-1", status: "failed" },
+    })).toThrow();
+    expect(() => validateTerminalEvent({
+      id: "evt-1",
+      type: "call.completed",
+      data: { id: "call-1", status: "completed" },
+    }, "evt-2")).toThrow();
   });
 
   it("deduplicates repeated and blank provider event ids", () => {

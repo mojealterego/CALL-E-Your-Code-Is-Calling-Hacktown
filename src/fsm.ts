@@ -8,7 +8,7 @@ const allowed: Record<IncidentState, IncidentState[]> = {
   verifying: ["resolved", "recovering", "escalated"],
   resolved: [],
   escalated: [],
-  recovering: [],
+  recovering: ["verifying"],
 };
 
 export function assertTransition(from: IncidentState, to: IncidentState): void {

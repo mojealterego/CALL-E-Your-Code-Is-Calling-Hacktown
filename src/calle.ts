@@ -60,11 +60,11 @@ export async function executeWithCalle(
   const rawOutcome = structured && typeof structured === "object"
     ? {
         ...(structured as Record<string, unknown>),
-        task_completed: taskCompleted,
-        completion_confidence: completionConfidence,
-        evidence,
-        failure_code: failureCode,
-        failure_message: failureMessage,
+        ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
+        ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
+        ...(evidence !== undefined ? { evidence } : {}),
+        ...(failureCode !== undefined ? { failure_code: failureCode } : {}),
+        ...(failureMessage !== undefined ? { failure_message: failureMessage } : {}),
       }
     : {
         route: "",
@@ -72,17 +72,15 @@ export async function executeWithCalle(
         eta_update_time: "",
         escalation_needed: "urgent",
         evidence_summary: stringField(callValue, "failure_message", "failureMessage") ?? "CALL-E returned no structured result",
-        evidence,
+        ...(evidence !== undefined ? { evidence } : {}),
         confidence: "unknown",
-        task_completed: taskCompleted,
-        completion_confidence: completionConfidence,
-        failure_code: failureCode,
-        failure_message: failureMessage,
+        ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
+        ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
+        ...(failureCode !== undefined ? { failure_code: failureCode } : {}),
+        ...(failureMessage !== undefined ? { failure_message: failureMessage } : {}),
       };
 
   const outcome = validateOutcome(rawOutcome);
-  return {
-    callId: stringField(callValue, "id", "call_id", "callId"),
-    outcome,
-  };
+  const callId = stringField(callValue, "id", "call_id", "callId");
+  return callId === undefined ? { outcome } : { callId, outcome };
 }

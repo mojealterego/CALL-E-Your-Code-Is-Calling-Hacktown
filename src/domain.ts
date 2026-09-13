@@ -1,10 +1,12 @@
 export type IncidentState =
   | "detected"
   | "validated"
-  | "approved"
+  | "prepared"
   | "calling"
+  | "verifying"
   | "resolved"
-  | "escalated";
+  | "escalated"
+  | "recovering";
 
 export type RouteAcceptance = "yes" | "no" | "unknown";
 export type EscalationLevel = "urgent" | "normal" | "none" | "unknown";
@@ -17,14 +19,21 @@ export interface Incident {
   closure: string;
   requestedBy: string;
   goal: string;
+  region?: string;
+  locale?: string;
 }
 
 export interface CallOutcome {
+  route: string;
   route_acceptance: RouteAcceptance;
   eta_update_time: string;
   escalation_needed: EscalationLevel;
   evidence_summary: string;
   confidence: ConfidenceLabel;
+  completion_confidence?: string;
+  task_completed?: boolean;
+  failure_code?: string;
+  failure_message?: string;
 }
 
 export interface CallRecord {
@@ -34,6 +43,9 @@ export interface CallRecord {
   createdAt: string;
   updatedAt: string;
   outcome?: CallOutcome;
+  transactionId?: string;
+  transactionDecision?: "commit" | "abort" | "recover";
+  transactionReasons?: string[];
   previousAuditDigest?: string;
   auditDigest?: string;
 }
@@ -42,6 +54,7 @@ export const RESULT_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
+    "route",
     "route_acceptance",
     "eta_update_time",
     "escalation_needed",
@@ -49,6 +62,7 @@ export const RESULT_SCHEMA = {
     "confidence"
   ],
   properties: {
+    route: { type: "string" },
     route_acceptance: {
       type: "string",
       enum: ["yes", "no", "unknown"]

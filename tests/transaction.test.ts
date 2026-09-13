@@ -17,6 +17,7 @@ describe("voice transaction reconciliation", () => {
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+      evidenceItems: ["Driver accepted Route B.", "Driver stated revised ETA 18:40."],
       taskCompleted: true,
     }).decision).toBe("commit");
   });
@@ -28,6 +29,7 @@ describe("voice transaction reconciliation", () => {
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route C.",
+      evidenceItems: ["Driver accepted Route C."],
       taskCompleted: true,
     });
     expect(result.decision).toBe("abort");
@@ -44,6 +46,19 @@ describe("voice transaction reconciliation", () => {
     expect(result.decision).toBe("recover");
   });
 
+  it("recovers when the call matches but provider evidence is absent", () => {
+    const result = reconcileTransaction(tx, {
+      route: "B",
+      eta: "18:40",
+      acceptance: "yes",
+      confidence: "high",
+      evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+      taskCompleted: true,
+    });
+    expect(result.decision).toBe("recover");
+    expect(result.reasons).toContain("CALL-E terminal evidence is missing");
+  });
+
   it("recovers a failed CALL-E task even when the conversation appears to match", () => {
     const result = reconcileTransaction(tx, {
       route: "B",
@@ -51,6 +66,7 @@ describe("voice transaction reconciliation", () => {
       acceptance: "yes",
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+      evidenceItems: ["Driver accepted Route B."],
       taskCompleted: false,
     });
     expect(result.decision).toBe("recover");

@@ -6,6 +6,7 @@ import { executeWithCalle } from "./calle.js";
 import { validateOutcome } from "./validation.js";
 import { prepareTransaction, reconcileTransaction } from "./transaction.js";
 import { createTransactionReceipt } from "./receipt.js";
+import { createCallCapability } from "./capability.js";
 
 function failureOutcome(message: string) {
   return validateOutcome({
@@ -50,11 +51,22 @@ export async function runIncident(
     maxEta: incident.maxEta,
   });
   ledger.transition(operationKey, "prepared", { transactionId: transaction.transactionId });
-  ledger.transition(operationKey, "calling");
+
+  const capability = createCallCapability({
+    operationKey,
+    participantId: incident.vehicleId,
+    endpoint: incident.phone,
+    scope: "route_change",
+    constraints: transaction.constraints,
+  });
+  ledger.transition(operationKey, "calling", {
+    capabilityId: capability.capabilityId,
+    previousAuditDigest: capability.constraintsDigest,
+  });
 
   try {
     const raw = options.live
-      ? await executeWithCalle(incident, operationKey)
+      ? await executeWithCalle(incident, operationKey, capability)
       : { status: "completed" as const, outcome: simulateCall(incident) };
     const outcome = validateOutcome(raw.outcome);
     ledger.transition(operationKey, "verifying", {
@@ -76,7 +88,7 @@ export async function runIncident(
     const reconciliation = reconcileTransaction(transaction, observedEvidence);
     const receipt = createTransactionReceipt({
       transactionId: transaction.transactionId,
-      transaction,
+      transaction: { ...transaction, capability },
       evidence: observedEvidence,
       decision: reconciliation.decision,
     });
@@ -92,7 +104,7 @@ export async function runIncident(
       transactionReasons: reconciliation.reasons,
       transactionReceipt: receipt,
     });
-    return { record, reused: false, outcome, transaction, reconciliation, receipt };
+    return { record, reused: false, outcome, transaction, capability, reconciliation, receipt };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown CALL-E execution failure";
     const record = ledger.transition(operationKey, "recovering", {
@@ -100,6 +112,6 @@ export async function runIncident(
       transactionDecision: "recover",
       transactionReasons: [message],
     });
-    return { record, reused: false, outcome: record.outcome };
+    return { record, reused: false, outcome: record.outcome, capability };
   }
 }

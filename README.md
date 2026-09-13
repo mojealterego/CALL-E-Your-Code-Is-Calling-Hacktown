@@ -15,6 +15,8 @@ INTENT
   ↓
 PREPARE — freeze exact route + ETA constraint
   ↓
+AUTHORIZE — create a short-lived capability bound to that transaction
+  ↓
 CALL — CALL-E contacts the authorized participant
   ↓
 VERIFY — validate terminal state + structured evidence
@@ -42,6 +44,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or co
 ## Implemented
 
 - Explicit transaction preparation with immutable route/ETA constraints.
+- Short-lived, operation-scoped capability fingerprint bound to participant + exact constraints.
 - CALL-E server SDK execution with E.164 recipients, region and locale.
 - Provider-side idempotency key for safe retries of the same logical operation.
 - Strict JSON Schema with explicit `unknown` states.
@@ -53,7 +56,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, or co
 - Append-only, hash-linked prototype audit history.
 - Current CALL-E webhook envelope validation and event-ID/header binding.
 - Deterministic dry-run path using the same validation and reconciliation pipeline.
-- Regression tests for commit, conflict, recovery, idempotency, receipt integrity and webhook safety.
+- Regression tests for commit, conflict, recovery, capability binding, receipt integrity and webhook safety.
 - Explicit live-mode opt-in; no silent fallback from live to dry-run.
 
 ## Quick start
@@ -81,6 +84,24 @@ npm run live
 ```
 
 Live execution is intentionally explicit because CALL-E can place real outbound phone calls. The server-side API key is never intended for frontend use.
+
+## Trust plane
+
+A phone number is an **execution endpoint**, not a complete participant identity or authorization grant.
+
+The capability layer separates:
+
+```text
+WHO   = participant identity
+WHERE = authorized phone endpoint
+WHAT  = transaction-scoped capability
+```
+
+The capability is non-secret and short-lived. It binds the operation to the exact prepared route and ETA constraints and is carried into CALL-E metadata for correlation. It is not presented as proof of human identity, voice biometric authentication or carrier-grade subscriber authentication.
+
+This architecture creates a clean path toward future device-attestation, private-cellular or enterprise-identity adapters without making the transaction engine dependent on a particular network technology.
+
+See `docs/trust-plane.md` for the complete design.
 
 ## Transaction receipt
 
@@ -113,6 +134,12 @@ Used when the execution or evidence is incomplete or uncertain. Recovery must re
                     ┌─────────────────────┐
                     │  Prepared intent    │
                     │  route + ETA limit  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │  Capability Builder │
+                    │ scoped + expiring   │
                     └──────────┬──────────┘
                                │
                                ▼
@@ -155,9 +182,11 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 │   ├── architecture.md
 │   ├── demo-script.md
 │   ├── grant-proposal.md
-│   └── security.md
+│   ├── security.md
+│   └── trust-plane.md
 ├── src/
 │   ├── calle.ts
+│   ├── capability.ts
 │   ├── cli.ts
 │   ├── domain.ts
 │   ├── fsm.ts
@@ -165,15 +194,18 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 │   ├── orchestrator.ts
 │   ├── policy.ts
 │   ├── receipt.ts
+│   ├── recovery.ts
 │   ├── simulator.ts
 │   ├── transaction.ts
 │   ├── validation.ts
 │   └── webhook.ts
 ├── tests/
+│   ├── capability.test.ts
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
 │   ├── policy.test.ts
 │   ├── receipt.test.ts
+│   ├── recovery.test.ts
 │   ├── transaction.test.ts
 │   ├── validation.test.ts
 │   └── webhook.test.ts
@@ -196,6 +228,7 @@ The project uses the current `0.7.x` SDK line. The generic one-shot Calls API re
 - Fixture/example phone numbers are rejected in live mode.
 - Webhook events are treated as untrusted notifications; event IDs are deduplicated and bound to the required header.
 - Business state is never committed from a webhook alone; authoritative call state must be reconciled before committing.
+- Capability metadata is non-secret and scoped; it must not be confused with identity authentication.
 - The prototype does not claim production RBAC, persistent enterprise storage, legal enforceability, or a production-grade webhook receiver.
 
 ## Demo target
@@ -205,7 +238,8 @@ The intended three-minute demonstration is:
 ```text
 0:00  A4 closure creates an operational exception
 0:15  PREPARE — Route B / ETA ≤ 19:00
-0:30  CALL-E — real authorized phone call
+0:25  AUTHORIZE — scoped capability appears
+0:35  CALL-E — real authorized phone call
 1:10  EVIDENCE — Route B / 18:40 / accepted
 1:30  RECONCILE
 1:45  COMMIT
@@ -221,6 +255,8 @@ The critical demonstration is that a phone call can produce evidence without bei
 - Durable transactional idempotency storage.
 - Persistent audit storage and independent digest verification.
 - Authoritative CALL-E re-fetch worker for webhook-driven reconciliation.
+- Bind the capability artifact directly into the persistent receipt schema.
+- Enterprise identity/device-attestation adapter.
 - RBAC and organization-level policy configuration.
 - Secrets management and rotation.
 - Retention/deletion and jurisdiction-specific privacy controls.

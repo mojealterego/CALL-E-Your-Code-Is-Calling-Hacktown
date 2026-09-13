@@ -55,6 +55,7 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
       ...(outcome.evidence !== undefined ? { evidenceItems: outcome.evidence } : {}),
       ...(outcome.task_completed !== undefined ? { taskCompleted: outcome.task_completed } : {}),
       ...(outcome.completion_confidence !== undefined ? { completionConfidence: outcome.completion_confidence } : {}),
+      ...(outcome.patient_confirmed !== undefined ? { patientConfirmed: outcome.patient_confirmed } : {}),
       ...(outcome.appointment_confirmed !== undefined ? { appointmentConfirmed: outcome.appointment_confirmed } : {}),
       ...(outcome.doctor_confirmed !== undefined ? { doctorConfirmed: outcome.doctor_confirmed } : {}),
       ...(outcome.first_visit !== undefined ? { firstVisit: outcome.first_visit } : {}),

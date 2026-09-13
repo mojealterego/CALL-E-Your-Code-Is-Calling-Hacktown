@@ -7,6 +7,7 @@ import { validateOutcome } from "./validation.js";
 import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointmentTransaction, reconcileTransaction, type PreparedAppointmentTransaction, type PreparedTransaction } from "./transaction.js";
 import { createTransactionReceipt } from "./receipt.js";
 import { createCallCapability } from "./capability.js";
+import { buildAssuranceContext, formalGate } from "./assurance.js";
 
 function failureOutcome(message: string) {
   return validateOutcome({ route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "urgent", evidence_summary: message, confidence: "unknown" });
@@ -71,13 +72,51 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
       ...(outcome.new_appointment_date !== undefined ? { newAppointmentDate: outcome.new_appointment_date } : {}),
       ...(outcome.new_appointment_time !== undefined ? { newAppointmentTime: outcome.new_appointment_time } : {}),
     };
+
+    const assurance = isAppointment
+      ? buildAssuranceContext({
+          patientName: appointment.patientName,
+          doctorName: appointment.doctorName,
+          appointmentDate: appointment.appointmentDate,
+          appointmentTime: appointment.appointmentTime,
+          appointmentDecision: outcome.appointment_decision,
+          patientConfirmed: outcome.patient_confirmed,
+          evidenceSummary: outcome.evidence_summary,
+          evidenceItems: outcome.evidence,
+          firstVisit: outcome.first_visit,
+        })
+      : undefined;
+
     const reconciliation = isAppointment
       ? reconcileAppointmentTransaction(transaction as PreparedAppointmentTransaction, observedEvidence)
       : reconcileTransaction(transaction as PreparedTransaction, observedEvidence);
-    const receipt = createTransactionReceipt({ transactionId: transaction.transactionId, transaction: { ...transaction, capability }, evidence: observedEvidence, decision: reconciliation.decision });
-    const state = reconciliation.decision === "commit" ? "resolved" : reconciliation.decision === "recover" ? "recovering" : "escalated";
-    const record = ledger.transition(operationKey, state, { transactionDecision: reconciliation.decision, transactionReasons: reconciliation.reasons, transactionReceipt: receipt });
-    return { record, reused: false, outcome, transaction, capability, reconciliation, receipt };
+
+    let finalDecision = reconciliation.decision;
+    let finalReasons = reconciliation.reasons;
+    if (finalDecision === "commit") {
+      const formal = formalGate({
+        decision: finalDecision,
+        patientConfirmed: outcome.patient_confirmed,
+        appointmentDecision: outcome.appointment_decision,
+        providerStatus: raw.status,
+        taskCompleted: outcome.task_completed,
+        conversationCompleted: outcome.conversation_completed,
+        evidenceItems: outcome.evidence,
+        selectedSlotPrepared: isAppointment && outcome.appointment_decision === "reschedule"
+          ? appointment.availableSlots.some((slot) => slot.date === outcome.new_appointment_date && slot.time === outcome.new_appointment_time)
+          : true,
+        contradiction: assurance?.thoughts.some((thought) => thought.contradicts.length > 0) ?? false,
+      });
+      if (!formal.allowed) {
+        finalDecision = "recover";
+        finalReasons = [...finalReasons, `formal assurance gate blocked commit: ${formal.violations.join(", ")}`];
+      }
+    }
+
+    const receipt = createTransactionReceipt({ transactionId: transaction.transactionId, transaction: { ...transaction, capability }, evidence: observedEvidence, decision: finalDecision });
+    const state = finalDecision === "commit" ? "resolved" : finalDecision === "recover" ? "recovering" : "escalated";
+    const record = ledger.transition(operationKey, state, { transactionDecision: finalDecision, transactionReasons: finalReasons, transactionReceipt: receipt });
+    return { record, reused: false, outcome, transaction, capability, reconciliation: { decision: finalDecision, reasons: finalReasons }, assurance, receipt };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown CALL-E execution failure";
     const record = ledger.transition(operationKey, "recovering", { outcome: failureOutcome(message), transactionDecision: "recover", transactionReasons: [message] });

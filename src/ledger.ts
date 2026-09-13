@@ -4,6 +4,7 @@ import { assertTransition } from "./fsm.js";
 
 export class AuditLedger {
   private readonly records: CallRecord[] = [];
+  private readonly historyRecords: CallRecord[] = [];
   private readonly keys = new Map<string, CallRecord>();
 
   reserve(operationKey: string): CallRecord {
@@ -48,12 +49,22 @@ export class AuditLedger {
     return this.records.map((record) => ({ ...record }));
   }
 
+  history(): CallRecord[] {
+    return this.historyRecords.map((record) => ({ ...record }));
+  }
+
   private commit(record: CallRecord): void {
-    record.previousAuditDigest = this.records.length > 0
-      ? this.records[this.records.length - 1].auditDigest
-      : undefined;
-    record.auditDigest = this.digest(record);
+    const event: CallRecord = {
+      ...record,
+      previousAuditDigest: this.historyRecords.length > 0
+        ? this.historyRecords[this.historyRecords.length - 1].auditDigest
+        : undefined,
+    };
+    event.auditDigest = this.digest(event);
+    this.historyRecords.push(Object.freeze({ ...event }));
     if (!this.keys.has(record.operationKey)) this.records.push(record);
+    record.previousAuditDigest = event.previousAuditDigest;
+    record.auditDigest = event.auditDigest;
     this.keys.set(record.operationKey, record);
   }
 

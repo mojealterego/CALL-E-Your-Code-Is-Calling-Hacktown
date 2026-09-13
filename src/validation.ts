@@ -28,6 +28,9 @@ export function validateOutcome(value: unknown): CallOutcome {
   if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
   if (typeof v.eta_update_time !== "string") throw new Error("Invalid eta_update_time");
   if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
+  if (v.evidence !== undefined && (!Array.isArray(v.evidence) || v.evidence.some((item) => typeof item !== "string"))) {
+    throw new Error("Invalid evidence");
+  }
   if (v.task_completed !== undefined && typeof v.task_completed !== "boolean") throw new Error("Invalid task_completed");
   const completionConfidence = validateCompletionConfidence(v.completion_confidence);
   return {
@@ -36,6 +39,7 @@ export function validateOutcome(value: unknown): CallOutcome {
     eta_update_time: v.eta_update_time,
     escalation_needed: v.escalation_needed as CallOutcome["escalation_needed"],
     evidence_summary: v.evidence_summary,
+    ...(v.evidence !== undefined ? { evidence: v.evidence as string[] } : {}),
     confidence: v.confidence as CallOutcome["confidence"],
     ...(v.task_completed !== undefined ? { task_completed: v.task_completed } : {}),
     ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),

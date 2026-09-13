@@ -93,7 +93,7 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
 
     let finalDecision = reconciliation.decision;
     let finalReasons = reconciliation.reasons;
-    if (finalDecision === "commit") {
+    if (isAppointment && finalDecision === "commit") {
       const formal = formalGate({
         decision: finalDecision,
         patientConfirmed: outcome.patient_confirmed,
@@ -102,7 +102,7 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
         taskCompleted: outcome.task_completed,
         conversationCompleted: outcome.conversation_completed,
         evidenceItems: outcome.evidence,
-        selectedSlotPrepared: isAppointment && outcome.appointment_decision === "reschedule"
+        selectedSlotPrepared: outcome.appointment_decision === "reschedule"
           ? appointment.availableSlots.some((slot) => slot.date === outcome.new_appointment_date && slot.time === outcome.new_appointment_time)
           : true,
         contradiction: assurance?.thoughts.some((thought) => thought.contradicts.length > 0) ?? false,

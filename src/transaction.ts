@@ -20,6 +20,8 @@ export interface ObservedEvidence {
   acceptance: "yes" | "no" | "unknown";
   confidence: "high" | "medium" | "low" | "unknown";
   evidenceSummary: string;
+  taskCompleted?: boolean;
+  completionConfidence?: string;
 }
 
 export interface ReconciliationResult {
@@ -66,6 +68,7 @@ export function reconcileTransaction(
 
   if (evidence.acceptance !== "yes") reasons.push("participant did not positively accept the proposed change");
   if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
+  if (evidence.taskCompleted === false) reasons.push("CALL-E task did not complete successfully");
   if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
   if (evidence.route !== transaction.constraints.route) reasons.push("observed route does not match prepared route");
   if (observedEta === undefined) reasons.push("observed ETA is missing or invalid");

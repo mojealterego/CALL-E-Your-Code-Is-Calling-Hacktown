@@ -19,6 +19,7 @@ describe("voice transaction reconciliation", () => {
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
       evidenceItems: ["Driver accepted Route B.", "Driver stated revised ETA 18:40."],
       taskCompleted: true,
+      providerStatus: "completed",
     }).decision).toBe("commit");
   });
 
@@ -31,6 +32,7 @@ describe("voice transaction reconciliation", () => {
       evidenceSummary: "Driver accepted Route C.",
       evidenceItems: ["Driver accepted Route C."],
       taskCompleted: true,
+      providerStatus: "completed",
     });
     expect(result.decision).toBe("abort");
     expect(result.reasons).toContain("observed route does not match prepared route");
@@ -42,6 +44,7 @@ describe("voice transaction reconciliation", () => {
       confidence: "unknown",
       evidenceSummary: "Call state could not establish the route.",
       taskCompleted: false,
+      providerStatus: "completed",
     });
     expect(result.decision).toBe("recover");
   });
@@ -54,6 +57,7 @@ describe("voice transaction reconciliation", () => {
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
       taskCompleted: true,
+      providerStatus: "completed",
     });
     expect(result.decision).toBe("recover");
     expect(result.reasons).toContain("CALL-E terminal evidence is missing");
@@ -67,9 +71,10 @@ describe("voice transaction reconciliation", () => {
       confidence: "high",
       evidenceSummary: "Driver accepted Route B and confirmed ETA.",
       evidenceItems: ["Driver accepted Route B."],
-      taskCompleted: false,
+      taskCompleted: true,
+      providerStatus: "failed",
     });
     expect(result.decision).toBe("recover");
-    expect(result.reasons).toContain("CALL-E task did not establish a successful terminal completion");
+    expect(result.reasons).toContain("authoritative CALL-E status is not completed");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assuranceHomeostasis, buildSystemStateManifest, challengeDecision, compareShadowRuns, counterfactualCheck, createEvolutionCandidate, negotiatePreparedSlot, rememberFailure } from "./evolution.js";
+import { assuranceHomeostasis, authorizationFromTrust, buildSystemStateManifest, challengeDecision, classifyFailure, compareShadowRuns, createEvolutionCandidate, createSandboxArtifact, createSemanticCacheEntry, degradeTrust, destroySandboxArtifact, detectDrift, evaluateFreshness, loadShedding, negotiatePreparedSlot, providerHandshake, replayAssuranceCases, rememberFailure, SAFETY_INVARIANTS } from "./evolution.js";
 
 describe("evolution and assurance engine", () => {
   it("degrades assurance without weakening safety", () => {
@@ -9,7 +9,7 @@ describe("evolution and assurance engine", () => {
   });
 
   it("finds counterexamples before commit", () => {
-    const results = counterfactualCheck({ decision: "commit", identityVerified: false, authoritativeCompleted: true, evidencePresent: true, selectedSlotPrepared: true, contradiction: false });
+    const results = (await import("./evolution.js")).counterfactualCheck({ decision: "commit", identityVerified: false, authoritativeCompleted: true, evidencePresent: true, selectedSlotPrepared: true, contradiction: false });
     expect(results.some((item) => item.severity === "critical" && item.counterexampleFound)).toBe(true);
   });
 
@@ -26,12 +26,7 @@ describe("evolution and assurance engine", () => {
   });
 
   it("never promotes without explicit authorization", () => {
-    const candidate = createEvolutionCandidate({
-      hypothesis: "Require a challenger before appointment commit.",
-      failures: [{ id: "f1", category: "verification", summary: "missing evidence", occurredAt: new Date().toISOString() }],
-      counterfactuals: [],
-      challenger: { challengedDecision: "commit", objections: [], passed: true },
-    });
+    const candidate = createEvolutionCandidate({ hypothesis: "Require a challenger before appointment commit.", failures: [{ id: "f1", category: "verification", summary: "missing evidence", occurredAt: new Date().toISOString() }], counterfactuals: [], challenger: { challengedDecision: "commit", objections: [], passed: true } });
     expect(candidate.promotion).toBe("shadow");
     expect(candidate.authorizationRequired).toBe(true);
   });
@@ -46,8 +41,55 @@ describe("evolution and assurance engine", () => {
   it("deduplicates failure memory and builds a state manifest", () => {
     const event = { id: "f1", category: "unknown" as const, summary: "unclear result", occurredAt: new Date().toISOString() };
     expect(rememberFailure([event], event)).toHaveLength(1);
-    const manifest = buildSystemStateManifest({ version: "1", provider: "CALL-E", capabilities: ["appointment_confirmation"], authorizationScope: ["appointment"], policyVersion: "v1", knownFailures: ["f1"], assuranceMode: "recovery-only", verificationState: "unverified", constraints: ["prepared-slots-only"], promotionState: "baseline" });
+    const manifest = buildSystemStateManifest({ version: "1", provider: "CALL-E", capabilities: ["appointment_confirmation"], authorizationScope: ["appointment"], policyVersion: "v1", knownFailures: ["f1"], assuranceMode: "recovery-only", verificationState: "unverified", constraints: ["prepared-slots-only"], promotionState: "baseline", trustLevel: "restricted", authorizationDecision: "denied", freshnessState: "stale" });
     expect(manifest.generatedAt).toBeTruthy();
     expect(manifest.authorizationScope).toContain("appointment");
+  });
+
+  it("classifies failures and replays hard negatives as recovery", () => {
+    expect(classifyFailure({ duplicate: true })).toBe("duplicate");
+    expect(classifyFailure({ verificationFailure: true })).toBe("verification");
+    const results = replayAssuranceCases([{ id: "unsafe-identity", decision: "commit", identityVerified: false, authoritativeCompleted: true, evidencePresent: true, selectedSlotPrepared: true, contradiction: false, expectedSafeDecision: "recover" }, { id: "safe", decision: "commit", identityVerified: true, authoritativeCompleted: true, evidencePresent: true, selectedSlotPrepared: true, contradiction: false, expectedSafeDecision: "commit" }]);
+    expect(results.every((result) => result.passed)).toBe(true);
+  });
+
+  it("degrades trust without ever turning trust into authorization", () => {
+    expect(degradeTrust("trusted", "verification")).toBe("untrusted");
+    expect(authorizationFromTrust("degraded", true)).toBe("denied");
+    expect(authorizationFromTrust("trusted", false)).toBe("unknown");
+  });
+
+  it("keeps semantic cache explicitly ineligible for authorization", () => {
+    const entry = createSemanticCacheEntry("appointment", "tomorrow", 60_000, ["claim-1"]);
+    expect(entry.authorizationEligible).toBe(false);
+  });
+
+  it("detects temporal staleness and drift", () => {
+    const now = new Date("2026-09-14T12:00:00.000Z");
+    expect(evaluateFreshness("2026-09-14T11:59:00.000Z", now, 120_000).state).toBe("fresh");
+    expect(evaluateFreshness("2026-09-14T11:50:00.000Z", now, 120_000).state).toBe("stale");
+    expect(detectDrift([0.9, 0.91], [0.6, 0.61], 0.2).drifted).toBe(true);
+  });
+
+  it("requires a provider handshake before trusting execution semantics", () => {
+    expect(providerHandshake({ provider: "CALL-E", schemaVersion: "v1", capabilities: ["voice"], supportedOperations: ["call"], verificationSemantics: "authoritative-readback", idempotency: "supported", limitsKnown: true }).accepted).toBe(true);
+    expect(providerHandshake({ provider: "unknown", schemaVersion: "v0", capabilities: [], supportedOperations: [], verificationSemantics: "unverified", idempotency: "unsupported", limitsKnown: false }).accepted).toBe(false);
+  });
+
+  it("sheds optional work while preserving verification", () => {
+    const result = loadShedding("normal", 0.95);
+    expect(result.dropOptionalWork).toBe(true);
+    expect(result.preserveVerification).toBe(true);
+  });
+
+  it("models throwaway sandbox artifacts with explicit destruction", () => {
+    const artifact = createSandboxArtifact("candidate-1", 60_000, new Date("2026-09-14T12:00:00.000Z"));
+    expect(destroySandboxArtifact(artifact).destroyed).toBe(true);
+  });
+
+  it("keeps non-overridable safety invariants explicit", () => {
+    expect(SAFETY_INVARIANTS).toContain("CAPABILITY_NEVER_GRANTS_AUTHORIZATION");
+    expect(SAFETY_INVARIANTS).toContain("UNKNOWN_NEVER_MEANS_SUCCESS");
+    expect(SAFETY_INVARIANTS).toContain("ONE_LOGICAL_TRANSACTION_MAX_ONE_EXTERNAL_EXECUTION");
   });
 });

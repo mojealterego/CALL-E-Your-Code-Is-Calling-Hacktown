@@ -31,7 +31,7 @@ describe("audit ledger", () => {
     const history = ledger.history();
     expect(history).toHaveLength(3);
     expect(prepared.previousAuditDigest).toBe(validated.auditDigest);
-    expect(history[2].previousAuditDigest).toBe(history[1].auditDigest);
+    expect(history[2]!.previousAuditDigest).toBe(history[1]!.auditDigest);
     expect(history.map((entry) => entry.state)).toEqual(["detected", "validated", "prepared"]);
   });
 });

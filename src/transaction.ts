@@ -2,7 +2,7 @@ export type TransactionDecision = "prepared" | "commit" | "abort" | "recover";
 
 export interface TransactionConstraints {
   route: string;
-  maxEtaMinutes: number;
+  maxEta: string;
 }
 
 export interface PreparedTransaction {
@@ -16,7 +16,7 @@ export interface PreparedTransaction {
 
 export interface ObservedEvidence {
   route?: string;
-  etaMinutes?: number;
+  eta?: string;
   acceptance: "yes" | "no" | "unknown";
   confidence: "high" | "medium" | "low" | "unknown";
   evidenceSummary: string;
@@ -27,17 +27,23 @@ export interface ReconciliationResult {
   reasons: string[];
 }
 
+function clockToMinutes(value: string): number | undefined {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return undefined;
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 export function prepareTransaction(input: {
   transactionId: string;
   incidentId: string;
   participantId: string;
   route: string;
-  maxEtaMinutes: number;
+  maxEta: string;
 }): PreparedTransaction {
   if (!input.transactionId || !input.incidentId || !input.participantId) {
     throw new Error("transaction identity is required");
   }
-  if (!input.route || !Number.isFinite(input.maxEtaMinutes) || input.maxEtaMinutes <= 0) {
+  if (!input.route || clockToMinutes(input.maxEta) === undefined) {
     throw new Error("valid transaction constraints are required");
   }
   return {
@@ -45,7 +51,7 @@ export function prepareTransaction(input: {
     incidentId: input.incidentId,
     participantId: input.participantId,
     action: "route_change",
-    constraints: { route: input.route, maxEtaMinutes: input.maxEtaMinutes },
+    constraints: { route: input.route, maxEta: input.maxEta },
     status: "prepared",
   };
 }
@@ -55,25 +61,17 @@ export function reconcileTransaction(
   evidence: ObservedEvidence,
 ): ReconciliationResult {
   const reasons: string[] = [];
-  if (evidence.acceptance !== "yes") {
-    reasons.push("participant did not positively accept the proposed change");
-  }
-  if (evidence.confidence !== "high") {
-    reasons.push("evidence confidence is not high");
-  }
-  if (!evidence.evidenceSummary.trim()) {
-    reasons.push("evidence summary is missing");
-  }
-  if (evidence.route !== transaction.constraints.route) {
-    reasons.push("observed route does not match prepared route");
-  }
-  if (evidence.etaMinutes === undefined) {
-    reasons.push("observed ETA is missing");
-  } else if (evidence.etaMinutes > transaction.constraints.maxEtaMinutes) {
-    reasons.push("observed ETA exceeds prepared constraint");
-  }
+  const observedEta = evidence.eta ? clockToMinutes(evidence.eta) : undefined;
+  const maxEta = clockToMinutes(transaction.constraints.maxEta);
 
-  if (evidence.acceptance === "unknown" || evidence.confidence === "unknown" || evidence.route === undefined || evidence.etaMinutes === undefined) {
+  if (evidence.acceptance !== "yes") reasons.push("participant did not positively accept the proposed change");
+  if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
+  if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
+  if (evidence.route !== transaction.constraints.route) reasons.push("observed route does not match prepared route");
+  if (observedEta === undefined) reasons.push("observed ETA is missing or invalid");
+  else if (maxEta !== undefined && observedEta > maxEta) reasons.push("observed ETA exceeds prepared constraint");
+
+  if (evidence.acceptance === "unknown" || evidence.confidence === "unknown" || evidence.route === undefined || observedEta === undefined) {
     return { decision: "recover", reasons };
   }
   if (reasons.length > 0) return { decision: "abort", reasons };

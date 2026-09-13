@@ -49,6 +49,7 @@ async function main() {
     operationKey: result.record.operationKey,
     callId: result.record.callId,
     outcome: result.outcome,
+    receipt: result.receipt ?? result.record.transactionReceipt,
     auditDigest: result.record.auditDigest,
     previousAuditDigest: result.record.previousAuditDigest,
     callsPlaced: live ? (result.record.callId ? 1 : 0) : 0,

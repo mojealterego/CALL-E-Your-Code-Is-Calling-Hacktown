@@ -1,4 +1,4 @@
-import type { CallOutcome, CompletionConfidence, AppointmentConfirmation } from "./domain.js";
+import type { CallOutcome, CompletionConfidence, AppointmentConfirmation, AppointmentDecision } from "./domain.js";
 
 const ROUTE_ACCEPTANCE = new Set(["yes", "no", "unknown"]);
 const ESCALATION = new Set(["urgent", "normal", "none", "unknown"]);
@@ -19,6 +19,11 @@ function validateCompletionConfidence(value: unknown): CompletionConfidence | st
 function validateAppointmentField(value: unknown, key: string): AppointmentConfirmation {
   if (!APPOINTMENT.has(String(value))) throw new Error(`Invalid ${key}`);
   return value as AppointmentConfirmation;
+}
+
+function validateAppointmentDecision(value: unknown): AppointmentDecision {
+  if (!APPOINTMENT_DECISION.has(String(value))) throw new Error("Invalid appointment_decision");
+  return value as AppointmentDecision;
 }
 
 export function validateOutcome(value: unknown): CallOutcome {
@@ -43,8 +48,7 @@ export function validateOutcome(value: unknown): CallOutcome {
     const conversationCompleted = booleanField("conversation_completed");
     const rescheduleRequested = booleanField("reschedule_requested");
     const rescheduleCompleted = booleanField("reschedule_completed");
-    if (!APPOINTMENT_DECISION.has(String(v.appointment_decision))) throw new Error("Invalid appointment_decision");
-    const appointmentDecision = v.appointment_decision as CallOutcome["appointment_decision"];
+    const appointmentDecision = validateAppointmentDecision(v.appointment_decision);
     if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
     const newAppointmentDate = v.new_appointment_date;
     const newAppointmentTime = v.new_appointment_time;

@@ -29,6 +29,7 @@ const base = {
   evidenceItems: ["Adam clearly stated his decision."],
   taskCompleted: true,
   providerStatus: "completed" as const,
+  patientConfirmed: "yes" as const,
   doctorConfirmed: "doktor Pawlak",
   conversationCompleted: true,
 };
@@ -96,6 +97,21 @@ describe("appointment transaction reconciliation", () => {
     expect(result.decision).toBe("abort");
   });
 
+  it("recovers when identity is not established", () => {
+    const result = reconcileAppointmentTransaction(tx, {
+      ...base,
+      patientConfirmed: "unknown",
+      appointmentConfirmed: "unknown",
+      appointmentDecision: "unknown",
+      firstVisit: "unknown",
+      identityDocumentReminderGiven: false,
+      arrive30MinutesEarly: false,
+      registrationReminderGiven: false,
+      informationFormReminderGiven: false,
+    });
+    expect(result.decision).toBe("recover");
+  });
+
   it("recovers when Adam wants to reschedule but no valid slot was accepted", () => {
     const result = reconcileAppointmentTransaction(tx, {
       ...base,
@@ -111,6 +127,6 @@ describe("appointment transaction reconciliation", () => {
       newAppointmentDate: "",
       newAppointmentTime: "",
     });
-    expect(result.decision).toBe("recover");
+    expect(result.decision).toBe("abort");
   });
 });

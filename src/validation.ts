@@ -4,6 +4,7 @@ const ROUTE_ACCEPTANCE = new Set(["yes", "no", "unknown"]);
 const ESCALATION = new Set(["urgent", "normal", "none", "unknown"]);
 const CONFIDENCE = new Set(["high", "medium", "low", "unknown"]);
 const APPOINTMENT = new Set(["yes", "no", "unknown"]);
+const APPOINTMENT_DECISION = new Set(["confirm", "reschedule", "cancel", "unknown"]);
 
 function validateCompletionConfidence(value: unknown): CompletionConfidence | string | undefined {
   if (value === undefined) return undefined;
@@ -18,14 +19,16 @@ function validateCompletionConfidence(value: unknown): CompletionConfidence | st
 export function validateOutcome(value: unknown): CallOutcome {
   if (!value || typeof value !== "object") throw new Error("CALL-E result must be an object");
   const v = value as Record<string, unknown>;
-  const appointmentResult = v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined;
+  const appointmentResult = v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined || v.appointment_decision !== undefined;
   if (appointmentResult) {
     if (!APPOINTMENT.has(String(v.appointment_confirmed))) throw new Error("Invalid appointment_confirmed");
     if (typeof v.doctor_confirmed !== "string") throw new Error("Invalid doctor_confirmed");
     if (!APPOINTMENT.has(String(v.first_visit))) throw new Error("Invalid first_visit");
-    for (const key of ["identity_document_reminder_given", "arrive_30_minutes_early", "registration_reminder_given", "conversation_completed"]) {
+    for (const key of ["identity_document_reminder_given", "arrive_30_minutes_early", "registration_reminder_given", "information_form_reminder_given", "conversation_completed", "reschedule_requested", "reschedule_completed"]) {
       if (typeof v[key] !== "boolean") throw new Error(`Invalid ${key}`);
     }
+    if (!APPOINTMENT_DECISION.has(String(v.appointment_decision))) throw new Error("Invalid appointment_decision");
+    if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
     if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
     if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
     return {
@@ -34,7 +37,10 @@ export function validateOutcome(value: unknown): CallOutcome {
       appointment_confirmed: v.appointment_confirmed as CallOutcome["appointment_confirmed"], doctor_confirmed: v.doctor_confirmed,
       first_visit: v.first_visit as CallOutcome["first_visit"], identity_document_reminder_given: v.identity_document_reminder_given,
       arrive_30_minutes_early: v.arrive_30_minutes_early, registration_reminder_given: v.registration_reminder_given,
-      conversation_completed: v.conversation_completed,
+      information_form_reminder_given: v.information_form_reminder_given, conversation_completed: v.conversation_completed,
+      appointment_decision: v.appointment_decision as CallOutcome["appointment_decision"],
+      reschedule_requested: v.reschedule_requested, reschedule_completed: v.reschedule_completed,
+      new_appointment_date: v.new_appointment_date, new_appointment_time: v.new_appointment_time,
       ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),
       ...(v.task_completed !== undefined ? { task_completed: v.task_completed as boolean } : {}),
       ...(v.completion_confidence !== undefined ? { completion_confidence: validateCompletionConfidence(v.completion_confidence) } : {}),

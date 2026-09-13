@@ -2,15 +2,18 @@
 
 Target repository: `CALLE-AI/awesome-phone-call-agents`
 
-Target path: `skills/voice-transaction-coordinator/SKILL.md`
+Target path: `skills/voice-transaction-coordinator/`
 
 ## Required steps
 
 1. Create a fork of `CALLE-AI/awesome-phone-call-agents` with your GitHub account.
 2. Create a branch from the fork's `main`, for example:
    `feat/voice-transaction-coordinator`
-3. Copy this repository's `docs/community-contribution/voice-transaction-coordinator/SKILL.md` to:
-   `skills/voice-transaction-coordinator/SKILL.md`
+3. Copy the complete prepared skill folder:
+   `docs/community-contribution/voice-transaction-coordinator/`
+   to:
+   `skills/voice-transaction-coordinator/`
+   This includes `SKILL.md` and `references/examples.md`.
 4. Add the following entry to the community README under **Skills**:
 
 ```md

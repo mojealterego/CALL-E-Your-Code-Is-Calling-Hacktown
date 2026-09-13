@@ -20,8 +20,9 @@ export interface ObservedEvidence {
   acceptance: "yes" | "no" | "unknown";
   confidence: "high" | "medium" | "low" | "unknown";
   evidenceSummary: string;
+  evidenceItems?: string[];
   taskCompleted?: boolean;
-  completionConfidence?: string;
+  completionConfidence?: unknown;
 }
 
 export interface ReconciliationResult {
@@ -70,6 +71,7 @@ export function reconcileTransaction(
   if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
   if (evidence.taskCompleted !== true) reasons.push("CALL-E task did not establish a successful terminal completion");
   if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
+  if (!evidence.evidenceItems || evidence.evidenceItems.length === 0) reasons.push("CALL-E terminal evidence is missing");
   if (evidence.route !== transaction.constraints.route) reasons.push("observed route does not match prepared route");
   if (observedEta === undefined) reasons.push("observed ETA is missing or invalid");
   else if (maxEta !== undefined && observedEta > maxEta) reasons.push("observed ETA exceeds prepared constraint");
@@ -79,7 +81,9 @@ export function reconcileTransaction(
     evidence.confidence === "unknown" ||
     evidence.route === undefined ||
     observedEta === undefined ||
-    evidence.taskCompleted !== true
+    evidence.taskCompleted !== true ||
+    !evidence.evidenceItems ||
+    evidence.evidenceItems.length === 0
   ) {
     return { decision: "recover", reasons };
   }

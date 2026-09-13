@@ -9,7 +9,9 @@ const demoIncident: Incident = {
   phone: "+15550123456",
   closure: "A4 highway closure affecting the planned route.",
   requestedBy: "dispatch-demo",
-  goal: "Inform the driver about the A4 closure, negotiate a diversion route, and confirm the revised ETA.",
+  proposedRoute: "B",
+  maxEta: "19:00",
+  goal: "Inform the driver about the A4 closure, verify acceptance of Route B, and confirm the revised ETA.",
 };
 
 function isLiveCommand(command: string): boolean {
@@ -30,15 +32,22 @@ async function main() {
     ? { ...demoIncident, phone: process.env.AEGIS_LIVE_PHONE ?? "" }
     : demoIncident;
 
+  if (live && !incident.phone) throw new Error("AEGIS_LIVE_PHONE is required for live mode");
+
   console.log(`AegisFleet | mode=${live ? "LIVE" : "DRY-RUN"}`);
   console.log(`Incident=${incident.id} vehicle=${incident.vehicleId}`);
+  console.log(`PREPARE route=${incident.proposedRoute} maxEta=${incident.maxEta}`);
 
   const result = await runIncident(incident, { live, ledger });
 
   console.log(JSON.stringify({
     state: result.record.state,
+    transactionId: result.transaction?.transactionId ?? result.record.transactionId,
+    decision: result.reconciliation?.decision ?? result.record.transactionDecision,
+    reasons: result.reconciliation?.reasons ?? result.record.transactionReasons,
     reused: result.reused,
     operationKey: result.record.operationKey,
+    callId: result.record.callId,
     outcome: result.outcome,
     auditDigest: result.record.auditDigest,
     previousAuditDigest: result.record.previousAuditDigest,

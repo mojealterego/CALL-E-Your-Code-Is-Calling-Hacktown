@@ -40,6 +40,7 @@ describe("evolution and assurance engine", () => {
     const slots = [{ date: "2026-09-15", time: "09:00" }, { date: "2026-09-15", time: "11:30" }, { date: "2026-09-16", time: "08:30" }];
     expect(negotiatePreparedSlot({ requestedDate: "2026-09-15", requestedTime: "11:30", availableSlots: slots }).selected).toEqual(slots[1]);
     expect(negotiatePreparedSlot({ requestedDate: "2026-09-15", requestedTime: "12:15", availableSlots: slots }).status).toBe("alternatives");
+    expect(negotiatePreparedSlot({ requestedDate: "2026-09-18", requestedTime: "12:15", availableSlots: slots }).status).toBe("none");
   });
 
   it("deduplicates failure memory and builds a state manifest", () => {

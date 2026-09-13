@@ -9,9 +9,14 @@ function extractStructuredResult(call: unknown): unknown {
   return value.structured_result ?? value.structuredResult ?? value.result;
 }
 
-function stringField(value: Record<string, unknown>, ...keys: string[]): string | undefined {
-  for (const key of keys) if (typeof value[key] === "string") return value[key];
+function field(value: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) if (value[key] !== undefined) return value[key];
   return undefined;
+}
+
+function stringField(value: Record<string, unknown>, ...keys: string[]): string | undefined {
+  const result = field(value, ...keys);
+  return typeof result === "string" ? result : undefined;
 }
 
 export async function executeWithCalle(
@@ -44,17 +49,22 @@ export async function executeWithCalle(
 
   const callValue = call as unknown as Record<string, unknown>;
   const structured = extractStructuredResult(call);
-  const evidence = Array.isArray(callValue.evidence)
-    ? callValue.evidence.filter((item): item is string => typeof item === "string")
+  const evidenceValue = field(callValue, "evidence", "evidence_items");
+  const evidence = Array.isArray(evidenceValue)
+    ? evidenceValue.filter((item): item is string => typeof item === "string")
     : undefined;
+  const taskCompleted = field(callValue, "task_completed", "taskCompleted");
+  const completionConfidence = field(callValue, "completion_confidence", "completionConfidence");
+  const failureCode = field(callValue, "failure_code", "failureCode");
+  const failureMessage = field(callValue, "failure_message", "failureMessage");
   const rawOutcome = structured && typeof structured === "object"
     ? {
         ...(structured as Record<string, unknown>),
-        task_completed: callValue.task_completed,
-        completion_confidence: callValue.completion_confidence,
+        task_completed: taskCompleted,
+        completion_confidence: completionConfidence,
         evidence,
-        failure_code: callValue.failure_code,
-        failure_message: callValue.failure_message,
+        failure_code: failureCode,
+        failure_message: failureMessage,
       }
     : {
         route: "",
@@ -64,10 +74,10 @@ export async function executeWithCalle(
         evidence_summary: stringField(callValue, "failure_message", "failureMessage") ?? "CALL-E returned no structured result",
         evidence,
         confidence: "unknown",
-        task_completed: callValue.task_completed,
-        completion_confidence: callValue.completion_confidence,
-        failure_code: callValue.failure_code,
-        failure_message: callValue.failure_message,
+        task_completed: taskCompleted,
+        completion_confidence: completionConfidence,
+        failure_code: failureCode,
+        failure_message: failureMessage,
       };
 
   const outcome = validateOutcome(rawOutcome);

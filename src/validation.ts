@@ -19,11 +19,12 @@ function validateCompletionConfidence(value: unknown): CompletionConfidence | st
 export function validateOutcome(value: unknown): CallOutcome {
   if (!value || typeof value !== "object") throw new Error("CALL-E result must be an object");
   const v = value as Record<string, unknown>;
-  const appointmentResult = v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined || v.appointment_decision !== undefined;
+  const appointmentResult = v.patient_confirmed !== undefined || v.appointment_confirmed !== undefined || v.first_visit !== undefined || v.doctor_confirmed !== undefined || v.appointment_decision !== undefined;
   if (appointmentResult) {
-    if (!APPOINTMENT.has(String(v.appointment_confirmed))) throw new Error("Invalid appointment_confirmed");
+    for (const [key, set] of [["patient_confirmed", APPOINTMENT], ["appointment_confirmed", APPOINTMENT], ["first_visit", APPOINTMENT]] as const) {
+      if (!set.has(String(v[key]))) throw new Error(`Invalid ${key}`);
+    }
     if (typeof v.doctor_confirmed !== "string") throw new Error("Invalid doctor_confirmed");
-    if (!APPOINTMENT.has(String(v.first_visit))) throw new Error("Invalid first_visit");
     for (const key of ["identity_document_reminder_given", "arrive_30_minutes_early", "registration_reminder_given", "information_form_reminder_given", "conversation_completed", "reschedule_requested", "reschedule_completed"]) {
       if (typeof v[key] !== "boolean") throw new Error(`Invalid ${key}`);
     }
@@ -34,16 +35,25 @@ export function validateOutcome(value: unknown): CallOutcome {
     return {
       route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "none",
       evidence_summary: v.evidence_summary, confidence: v.confidence as CallOutcome["confidence"],
-      appointment_confirmed: v.appointment_confirmed as CallOutcome["appointment_confirmed"], doctor_confirmed: v.doctor_confirmed,
-      first_visit: v.first_visit as CallOutcome["first_visit"], identity_document_reminder_given: v.identity_document_reminder_given,
-      arrive_30_minutes_early: v.arrive_30_minutes_early, registration_reminder_given: v.registration_reminder_given,
-      information_form_reminder_given: v.information_form_reminder_given, conversation_completed: v.conversation_completed,
+      patient_confirmed: v.patient_confirmed as CallOutcome["patient_confirmed"],
+      appointment_confirmed: v.appointment_confirmed as CallOutcome["appointment_confirmed"],
+      doctor_confirmed: v.doctor_confirmed,
+      first_visit: v.first_visit as CallOutcome["first_visit"],
+      identity_document_reminder_given: v.identity_document_reminder_given,
+      arrive_30_minutes_early: v.arrive_30_minutes_early,
+      registration_reminder_given: v.registration_reminder_given,
+      information_form_reminder_given: v.information_form_reminder_given,
+      conversation_completed: v.conversation_completed,
       appointment_decision: v.appointment_decision as CallOutcome["appointment_decision"],
-      reschedule_requested: v.reschedule_requested, reschedule_completed: v.reschedule_completed,
-      new_appointment_date: v.new_appointment_date, new_appointment_time: v.new_appointment_time,
+      reschedule_requested: v.reschedule_requested,
+      reschedule_completed: v.reschedule_completed,
+      new_appointment_date: v.new_appointment_date,
+      new_appointment_time: v.new_appointment_time,
       ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),
       ...(v.task_completed !== undefined ? { task_completed: v.task_completed as boolean } : {}),
       ...(v.completion_confidence !== undefined ? { completion_confidence: validateCompletionConfidence(v.completion_confidence) } : {}),
+      ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}),
+      ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
     };
   }
 

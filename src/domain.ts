@@ -14,10 +14,16 @@ export type RouteAcceptance = "yes" | "no" | "unknown";
 export type EscalationLevel = "urgent" | "normal" | "none" | "unknown";
 export type ConfidenceLabel = "high" | "medium" | "low" | "unknown";
 export type AppointmentConfirmation = "yes" | "no" | "unknown";
+export type AppointmentDecision = "confirm" | "reschedule" | "cancel" | "unknown";
 
 export interface CompletionConfidence {
   score?: number;
   label?: string;
+}
+
+export interface AppointmentSlot {
+  date: string;
+  time: string;
 }
 
 export interface Incident {
@@ -36,6 +42,9 @@ export interface Incident {
     patientName: string;
     doctorName: string;
     appointmentReference: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    availableSlots: AppointmentSlot[];
   };
 }
 
@@ -57,7 +66,13 @@ export interface CallOutcome {
   identity_document_reminder_given?: boolean;
   arrive_30_minutes_early?: boolean;
   registration_reminder_given?: boolean;
+  information_form_reminder_given?: boolean;
   conversation_completed?: boolean;
+  appointment_decision?: AppointmentDecision;
+  reschedule_requested?: boolean;
+  reschedule_completed?: boolean;
+  new_appointment_date?: string;
+  new_appointment_time?: string;
 }
 
 export interface CallRecord {
@@ -100,7 +115,13 @@ export const APPOINTMENT_RESULT_SCHEMA = {
     "identity_document_reminder_given",
     "arrive_30_minutes_early",
     "registration_reminder_given",
+    "information_form_reminder_given",
     "conversation_completed",
+    "appointment_decision",
+    "reschedule_requested",
+    "reschedule_completed",
+    "new_appointment_date",
+    "new_appointment_time",
     "evidence_summary",
     "confidence"
   ],
@@ -111,7 +132,13 @@ export const APPOINTMENT_RESULT_SCHEMA = {
     identity_document_reminder_given: { type: "boolean" },
     arrive_30_minutes_early: { type: "boolean" },
     registration_reminder_given: { type: "boolean" },
+    information_form_reminder_given: { type: "boolean" },
     conversation_completed: { type: "boolean" },
+    appointment_decision: { type: "string", enum: ["confirm", "reschedule", "cancel", "unknown"] },
+    reschedule_requested: { type: "boolean" },
+    reschedule_completed: { type: "boolean" },
+    new_appointment_date: { type: "string" },
+    new_appointment_time: { type: "string" },
     evidence_summary: { type: "string", minLength: 1 },
     confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
   }

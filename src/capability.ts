@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export type CapabilityScope = "route_change";
+export type CapabilityScope = "route_change" | "appointment_confirmation";
 
 export interface CallCapability {
   version: "1";

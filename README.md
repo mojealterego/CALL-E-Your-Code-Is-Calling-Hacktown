@@ -4,6 +4,18 @@ Governed autonomous phone coordination for logistics exceptions, built with CALL
 
 The repository implements a bounded control plane around phone execution: policy → idempotency → CALL-E/simulator → strict outcome validation → evidence/confidence gate → resolve/escalate → audit → Reflexion → bitemporal memory.
 
+## Real-World Assurance Fabric
+
+`src/assurance-fabric.ts` extends the execution boundary with the controls recovered from the Knowledge-projects material: Claim Ledger, Evidence Graph, Monitorability Score, trajectory security, post-call compound reasoning, explicit epistemic states, stale-state protection, Side-Effect Conservation Invariant and a versioned Conversation Contract.
+
+The operating principle is: **evidence ≠ inference ≠ verified fact**. Conversational claims remain `UNVERIFIED` until the existing transaction gates justify commitment. `UNKNOWN`, `UNVERIFIED`, `CONTRADICTED` and `STALE` are never silently collapsed into success.
+
+`runIncident()` now creates the Conversation Contract before execution and returns a post-call assurance bundle containing claims, provenance graph, monitorability and trajectory-security results. Compound reasoning is post-call only; agreement is a confidence signal, not proof, and disagreement forces recovery.
+
+Prepared state is versioned against authoritative readback. A mismatch produces `STALE → RECOVER`. Uncertainty about whether an external call happened is governed by the Side-Effect Conservation Invariant: one logical transaction permits zero or one external execution, never a blind duplicate retry.
+
+Full design: `docs/real-world-assurance-fabric.md`. Regression suite: `tests/assurance-fabric.test.ts`.
+
 ## Implemented cognitive control
 
 `src/cognitive-modules.ts` provides bounded deterministic primitives for working memory, HDC/holographic associative indexing, Shimi-style semantic retrieval with temporal decay, counterfactual causal analysis, capability-scoped MCP gateway boundaries, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution evaluation protocol.
@@ -70,6 +82,7 @@ npm run verify:final
 npm run verify:meta
 npm run verify:asi
 npm run verify:transcendence
+npm run verify:assurance
 ```
 
 Rust fast-path verification:
@@ -94,6 +107,9 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 - Added the dedicated governed Meta-Architect 34–69 layer and regression suite, including a six-gate RSI release protocol with mandatory rollback on failed evidence.
 - Added the ASI Transcendence 70–88 bounded layer and dedicated regression suite.
 - Added the Transcendence 89–99 bounded layer and dedicated regression suite: category/functor mapping, multi-valued epistemic state, defragmentation, sandbox swarm merge, transpilation boundaries, formal/adversarial approval, substrate/energy gates, hybrid quantum planning, alignment integrity and epistemic humility.
+- Added the Real-World Assurance Fabric layer: Claim Ledger, Evidence Graph, Monitorability Score, trajectory security, post-call compound reasoning, explicit epistemic statuses, stale-state protection, Side-Effect Conservation Invariant and Conversation Contract.
+- Integrated the assurance bundle into `runIncident()` without allowing it to bypass the existing policy/idempotency/structured-outcome gates.
+- Added a dedicated `verify:assurance` regression command.
 - Added a Rust LIF SNN fast path with explicit 1 ms budget accounting and optional Zenoh 1.x transport.
 - Added bounded ImandraX-style proof-request/invariant gating and a one-cycle MARS metacognitive reflection controller.
 - Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.

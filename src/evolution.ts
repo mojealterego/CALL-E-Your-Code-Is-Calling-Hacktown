@@ -19,15 +19,7 @@ export interface SemanticCacheEntry { key: string; value: string; recordedAt: st
 export interface FreshnessResult { state: "fresh" | "stale" | "unknown"; ageMs: number | null; reason: string; }
 export interface SandboxArtifact { id: string; createdAt: string; expiresAt: string; destroyed: boolean; }
 
-export const SAFETY_INVARIANTS = [
-  "CAPABILITY_NEVER_GRANTS_AUTHORIZATION",
-  "UNKNOWN_NEVER_MEANS_SUCCESS",
-  "UNVERIFIED_NEVER_COMMITS",
-  "ONE_LOGICAL_TRANSACTION_MAX_ONE_EXTERNAL_EXECUTION",
-  "WEBHOOK_NEVER_AUTHORIZES_STATE_MUTATION",
-  "PREPARED_AVAILABILITY_ONLY",
-  "MEMORY_NEVER_AUTHORIZES_EXECUTION",
-] as const;
+export const SAFETY_INVARIANTS = ["CAPABILITY_NEVER_GRANTS_AUTHORIZATION", "UNKNOWN_NEVER_MEANS_SUCCESS", "UNVERIFIED_NEVER_COMMITS", "ONE_LOGICAL_TRANSACTION_MAX_ONE_EXTERNAL_EXECUTION", "WEBHOOK_NEVER_AUTHORIZES_STATE_MUTATION", "PREPARED_AVAILABILITY_ONLY", "MEMORY_NEVER_AUTHORIZES_EXECUTION"] as const;
 
 export function assuranceHomeostasis(metrics: AssuranceMetrics): AssuranceMode {
   if (metrics.verificationFailureRate >= 0.25 || metrics.duplicateExecutionAttempts > 0) return "human-review";
@@ -74,78 +66,19 @@ export function evaluatePromotion(shadow: ShadowComparison | undefined, challeng
 
 export function buildSystemStateManifest(input: Omit<SystemStateManifest, "generatedAt">): SystemStateManifest { return { ...input, generatedAt: new Date().toISOString() }; }
 export function rememberFailure(failures: FailureEvent[], event: FailureEvent): FailureEvent[] { return [...failures, event].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index); }
-
 export function classifyFailure(input: { unknown?: boolean; contradiction?: boolean; providerError?: boolean; verificationFailure?: boolean; duplicate?: boolean; timeout?: boolean; policyViolation?: boolean }): FailureCategory {
-  if (input.duplicate) return "duplicate";
-  if (input.verificationFailure) return "verification";
-  if (input.policyViolation) return "policy";
-  if (input.contradiction) return "contradiction";
-  if (input.unknown) return "unknown";
-  if (input.providerError) return "provider";
-  if (input.timeout) return "timeout";
-  return "other";
+  if (input.duplicate) return "duplicate"; if (input.verificationFailure) return "verification"; if (input.policyViolation) return "policy"; if (input.contradiction) return "contradiction"; if (input.unknown) return "unknown"; if (input.providerError) return "provider"; if (input.timeout) return "timeout"; return "other";
 }
-
-export function replayAssuranceCases(cases: ReplayCase[]): ReplayResult[] {
-  return cases.map((testCase) => {
-    const challenger = challengeDecision(testCase);
-    const counterfactuals = counterfactualCheck(testCase);
-    const unsafe = counterfactuals.some((item) => item.counterexampleFound && item.severity === "critical") || !challenger.passed;
-    const actualDecision = unsafe ? "recover" : testCase.decision;
-    return { caseId: testCase.id, actualDecision, expectedSafeDecision: testCase.expectedSafeDecision, passed: actualDecision === testCase.expectedSafeDecision, objections: challenger.objections };
-  });
-}
-
-export function detectDrift(baseline: number[], current: number[], threshold = 0.20): { drifted: boolean; distance: number } {
-  if (baseline.length === 0 || current.length === 0) return { drifted: false, distance: 0 };
-  const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
-  const distance = Math.abs(mean(current) - mean(baseline));
-  return { drifted: distance >= threshold, distance };
-}
-
-export function degradeTrust(current: TrustLevel, failure: FailureCategory): TrustLevel {
-  if (failure === "duplicate" || failure === "verification" || failure === "policy") return "untrusted";
-  if (current === "trusted") return "degraded";
-  if (current === "degraded") return "restricted";
-  if (current === "restricted") return "untrusted";
-  return "untrusted";
-}
-
-export function authorizationFromTrust(trust: TrustLevel, requested: boolean): "allowed" | "denied" | "unknown" {
-  if (!requested) return "unknown";
-  return trust === "trusted" ? "allowed" : "denied";
-}
-
-export function createSemanticCacheEntry(key: string, value: string, ttlMs: number, sourceRefs: string[], now = new Date()): SemanticCacheEntry {
-  return { key, value, recordedAt: now.toISOString(), expiresAt: new Date(now.getTime() + ttlMs).toISOString(), sourceRefs, authorizationEligible: false };
-}
-
-export function evaluateFreshness(recordedAt: string | undefined, now = new Date(), maxAgeMs = 5 * 60_000): FreshnessResult {
-  if (!recordedAt) return { state: "unknown", ageMs: null, reason: "No temporal record exists." };
-  const ageMs = now.getTime() - new Date(recordedAt).getTime();
-  if (!Number.isFinite(ageMs) || ageMs < 0) return { state: "unknown", ageMs: null, reason: "Temporal record is invalid or from the future." };
-  return ageMs <= maxAgeMs ? { state: "fresh", ageMs, reason: "Recorded state is within the freshness window." } : { state: "stale", ageMs, reason: "Recorded state exceeds the freshness window." };
-}
-
-export function providerHandshake(input: Omit<ProviderHandshake, "accepted" | "reasons">): ProviderHandshake {
-  const reasons: string[] = [];
-  if (input.verificationSemantics !== "authoritative-readback") reasons.push("Authoritative readback is unavailable.");
-  if (input.idempotency !== "supported") reasons.push("Provider idempotency is unavailable.");
-  if (!input.limitsKnown) reasons.push("Provider limits are not known.");
-  return { ...input, accepted: reasons.length === 0, reasons };
-}
-
-export function loadShedding(mode: AssuranceMode, loadRatio: number): { mode: AssuranceMode; dropOptionalWork: boolean; preserveVerification: true } {
-  if (loadRatio <= 0.80) return { mode, dropOptionalWork: false, preserveVerification: true };
-  const degraded = mode === "normal" ? "degraded" : mode;
-  return { mode: degraded, dropOptionalWork: true, preserveVerification: true };
-}
-
-export function createSandboxArtifact(id: string, ttlMs: number, now = new Date()): SandboxArtifact {
-  return { id, createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + ttlMs).toISOString(), destroyed: false };
-}
+export function replayAssuranceCases(cases: ReplayCase[]): ReplayResult[] { return cases.map((testCase) => { const challenger = challengeDecision(testCase); const counterfactuals = counterfactualCheck(testCase); const unsafe = counterfactuals.some((item) => item.counterexampleFound && item.severity === "critical") || !challenger.passed; const actualDecision = unsafe ? "recover" : testCase.decision; return { caseId: testCase.id, actualDecision, expectedSafeDecision: testCase.expectedSafeDecision, passed: actualDecision === testCase.expectedSafeDecision, objections: challenger.objections }; }); }
+export function detectDrift(baseline: number[], current: number[], threshold = 0.20): { drifted: boolean; distance: number } { if (baseline.length === 0 || current.length === 0) return { drifted: false, distance: 0 }; const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length; const distance = Math.abs(mean(current) - mean(baseline)); return { drifted: distance >= threshold, distance }; }
+export function degradeTrust(current: TrustLevel, failure: FailureCategory): TrustLevel { if (failure === "duplicate" || failure === "verification" || failure === "policy") return "untrusted"; if (current === "trusted") return "degraded"; if (current === "degraded") return "restricted"; if (current === "restricted") return "untrusted"; return "untrusted"; }
+export function authorizationFromTrust(trust: TrustLevel, requested: boolean): "allowed" | "denied" | "unknown" { if (!requested) return "unknown"; return trust === "trusted" ? "allowed" : "denied"; }
+export function createSemanticCacheEntry(key: string, value: string, ttlMs: number, sourceRefs: string[], now = new Date()): SemanticCacheEntry { return { key, value, recordedAt: now.toISOString(), expiresAt: new Date(now.getTime() + ttlMs).toISOString(), sourceRefs, authorizationEligible: false }; }
+export function evaluateFreshness(recordedAt: string | undefined, now = new Date(), maxAgeMs = 5 * 60_000): FreshnessResult { if (!recordedAt) return { state: "unknown", ageMs: null, reason: "No temporal record exists." }; const ageMs = now.getTime() - new Date(recordedAt).getTime(); if (!Number.isFinite(ageMs) || ageMs < 0) return { state: "unknown", ageMs: null, reason: "Temporal record is invalid or from the future." }; return ageMs <= maxAgeMs ? { state: "fresh", ageMs, reason: "Recorded state is within the freshness window." } : { state: "stale", ageMs, reason: "Recorded state exceeds the freshness window." }; }
+export function providerHandshake(input: Omit<ProviderHandshake, "accepted" | "reasons">): ProviderHandshake { const reasons: string[] = []; if (input.verificationSemantics !== "authoritative-readback") reasons.push("Authoritative readback is unavailable."); if (input.idempotency !== "supported") reasons.push("Provider idempotency is unavailable."); if (!input.limitsKnown) reasons.push("Provider limits are not known."); return { ...input, accepted: reasons.length === 0, reasons }; }
+export function loadShedding(mode: AssuranceMode, loadRatio: number): { mode: AssuranceMode; dropOptionalWork: boolean; preserveVerification: true } { if (loadRatio <= 0.80) return { mode, dropOptionalWork: false, preserveVerification: true }; const degraded = mode === "normal" ? "degraded" : mode; return { mode: degraded, dropOptionalWork: true, preserveVerification: true }; }
+export function createSandboxArtifact(id: string, ttlMs: number, now = new Date()): SandboxArtifact { return { id, createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + ttlMs).toISOString(), destroyed: false }; }
 export function destroySandboxArtifact(artifact: SandboxArtifact): SandboxArtifact { return { ...artifact, destroyed: true }; }
-
 export function createEvolutionCandidate(input: { hypothesis: string; failures: FailureEvent[]; counterfactuals: CounterfactualResult[]; challenger: ChallengerResult; shadow?: ShadowComparison; }): EvolutionCandidate { return { hypothesis: input.hypothesis, failureIds: input.failures.map((failure) => failure.id), counterfactuals: input.counterfactuals, challenger: input.challenger, ...(input.shadow ? { shadow: input.shadow } : {}), promotion: evaluatePromotion(input.shadow, input.challenger.passed, input.counterfactuals), authorizationRequired: true }; }
 
 export function negotiatePreparedSlot(input: { requestedDate?: string; requestedTime?: string; availableSlots: AppointmentSlot[]; }): { status: "match" | "alternatives" | "none"; selected?: AppointmentSlot; alternatives: AppointmentSlot[] } {

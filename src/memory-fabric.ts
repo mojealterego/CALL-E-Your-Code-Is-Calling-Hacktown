@@ -39,8 +39,6 @@ export interface BitemporalMemoryItem extends MemoryItem {
 /**
  * Seven-dimensional memory:
  * working, episodic, semantic, procedural, holographic, bitemporal and graph.
- * Bitemporal and graph are orthogonal indexes, so they remain optional for
- * compatibility with the original five-collection fabric.
  */
 export interface MemoryFabric {
   working: MemoryItem[];
@@ -66,6 +64,10 @@ export function episodicRetrieve(query: string, fabric: MemoryFabric, limit = 5)
 
 export function proceduralRetrieve(query: string, fabric: MemoryFabric, limit = 5): MemoryItem[] {
   return semanticRag(query, fabric.procedural, limit);
+}
+
+export function workingRetrieve(query: string, fabric: MemoryFabric, limit = 5): MemoryItem[] {
+  return semanticRag(query, fabric.working, limit);
 }
 
 /** Retrieve facts valid at a domain time, while preserving transaction-time order. */
@@ -94,6 +96,7 @@ export function graphRetrieve(query: string, fabric: MemoryFabric, limit = 10): 
     ...fabric.semantic,
     ...fabric.procedural,
     ...fabric.holographic,
+    ...(fabric.bitemporal ?? []),
   ];
   const direct = semanticRag(query, all, limit);
   const directIds = new Set(direct.map((item) => item.id));
@@ -109,10 +112,12 @@ export function graphRetrieve(query: string, fabric: MemoryFabric, limit = 10): 
 /** Whole-memory retrieval used by GoT/R3 context assembly. */
 export function retrieveWholeMemory(query: string, fabric: MemoryFabric, limitPerDimension = 5): MemoryItem[] {
   const ranked = [
+    ...workingRetrieve(query, fabric, limitPerDimension),
     ...semanticRetrieve(query, fabric, limitPerDimension),
     ...episodicRetrieve(query, fabric, limitPerDimension),
     ...proceduralRetrieve(query, fabric, limitPerDimension),
     ...holographicRetrieve(query, fabric, limitPerDimension),
+    ...temporalRetrieve(fabric.bitemporal?.[0]?.validFrom ?? new Date().toISOString(), fabric, limitPerDimension),
     ...graphRetrieve(query, fabric, limitPerDimension),
   ];
   const seen = new Set<string>();

@@ -18,6 +18,40 @@ INTENT → PREPARE → AUTHORIZE → CALL-E → READBACK → RECONCILE → COMMI
 
 The phone conversation is deliberately **not** the commit boundary. A positive conversational answer is insufficient unless it matches the prepared transaction constraints and CALL-E reports successful terminal completion.
 
+## Knowledge-projects → Assurance Fabric
+
+The architecture recovered from the Knowledge-projects material is now encoded as executable assurance primitives, not only documentation:
+
+```text
+CALL-E
+  ↓
+CLAIM LEDGER + PROVENANCE
+  ↓
+EVIDENCE GRAPH + CONTRADICTION CHECK
+  ↓
+MONITORABILITY
+  ↓
+AUTHORITATIVE READBACK
+  ↓
+POSTCONDITION / FORMAL GATE
+  ↓
+COMMIT / ABORT / RECOVER
+```
+
+Key invariants:
+
+- `EVIDENCE ≠ INFERENCE ≠ VERIFIED FACT`;
+- conversational claims remain `unverified` until authoritative verification;
+- `unknown` is distinct from false, true and verified;
+- low monitorability reduces allowed authority;
+- material parser disagreement causes `RECOVER`, not majority-vote commit;
+- stale prepared state cannot silently overwrite newer state;
+- `1 logical transaction → 0 or 1 external execution`;
+- identity failure followed by disclosure is a trajectory violation;
+- first-visit evidence is conditional rather than globally required.
+
+The full recovered design is documented in [`docs/knowledge-assurance-fabric.md`](docs/knowledge-assurance-fabric.md).
+
 ## Evolution & Assurance Engine
 
 AegisFleet does not treat failures as log entries that disappear after the run. A failed or uncertain trajectory becomes structured evidence for a controlled improvement loop:
@@ -41,7 +75,7 @@ EXPLICIT AUTHORIZATION
    ↺
 ```
 
-Implemented safeguards include offline assurance replay, hard-negative regression cases, failure classification, trust degradation, temporal freshness checks, provider handshakes, adaptive load shedding that preserves verification, semantic cache entries that are explicitly **not authorization-eligible**, and throwaway sandbox artifacts.
+Implemented safeguards include offline assurance replay, hard-negative regression cases, failure classification, trust degradation, temporal freshness checks, provider handshakes, adaptive load shedding that preserves verification, semantic cache entries that are explicitly **not** authorization-eligible, and throwaway sandbox artifacts.
 
 The engine enforces a constitutional safety boundary:
 
@@ -81,6 +115,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, stale
 - Current CALL-E webhook envelope validation and event-ID/header binding.
 - Deterministic dry-run path using the same validation and reconciliation pipeline.
 - Evolution & Assurance Engine with replay, failure memory, counterfactual challenge, trust/freshness state and promotion gating.
+- Claim Ledger, Evidence Graph, monitorability scoring, trajectory security checks, post-call compound-reasoning reconciliation, epistemic status, stale-state protection, side-effect conservation and versioned Conversation Contract.
 - Regression tests covering safety invariants and the orchestrated transaction path.
 - Explicit live-mode opt-in; no silent fallback from live to dry-run.
 

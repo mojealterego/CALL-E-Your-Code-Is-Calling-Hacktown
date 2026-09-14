@@ -25,10 +25,10 @@ jobs:
       CALLE_REGION: PL
       CALLE_LOCALE: pl-PL
     steps:
-      - name: Checkout tested feature branch
+      - name: Checkout main under test
         uses: actions/checkout@v4
         with:
-          ref: feat/voice-transaction-core-v5
+          ref: main
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

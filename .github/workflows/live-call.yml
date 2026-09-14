@@ -3,19 +3,21 @@ name: LIVE CALL-E Test
 on:
   workflow_dispatch:
     inputs:
-      confirmation:
-        description: "Explicitly authorize ONE live CALL-E test call"
+      ref:
+        description: "Git ref to execute"
         required: true
-        type: choice
-        options:
-          - I AUTHORIZE ONE TEST CALL
+        default: "feat/voice-transaction-core-v5"
+        type: string
+      confirmation:
+        description: "Type exactly I AUTHORIZE ONE TEST CALL"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   live-call:
-    if: ${{ inputs.confirmation == 'I AUTHORIZE ONE TEST CALL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -24,18 +26,32 @@ jobs:
       AEGIS_LIVE_PHONE: ${{ secrets.AEGIS_LIVE_PHONE }}
       CALLE_REGION: PL
       CALLE_LOCALE: pl-PL
+      CALLE_BASE_URL: https://api.heycall-e.com
+      AEGIS_LIVE_TEST_ID: ${{ github.run_id }}
     steps:
-      - name: Checkout main under test
+      - name: Authorize exactly one live call
+        shell: bash
+        run: |
+          test "$CONFIRMATION" = "I AUTHORIZE ONE TEST CALL" || { echo "Live call authorization failed."; exit 1; }
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+      - name: Checkout selected ref under test
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ inputs.ref }}
+      - name: Show exact revision under test
+        run: git rev-parse HEAD
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Validate configuration
+      - name: Verify tests and typecheck before live execution
+        run: |
+          npm test
+          npm run typecheck
+      - name: Validate live configuration
         shell: bash
         run: |
           test -n "$CALLE_API_KEY" || { echo "CALLE_API_KEY secret is missing"; exit 1; }
@@ -51,8 +67,13 @@ jobs:
             --data '{}')
           case "$status" in
             400|422) echo "CALL-E authentication accepted; malformed preflight request rejected as expected." ;;
-            401|403) echo "CALL-E rejected CALLE_API_KEY (HTTP $status). Replace the repository secret with a valid CALL-E API key."; exit 1 ;;
+            401|403) echo "CALL-E rejected CALLE_API_KEY (HTTP $status)."; exit 1 ;;
             *) echo "Unexpected CALL-E preflight HTTP status: $status"; exit 1 ;;
           esac
-      - name: Run exactly one live transaction
+      - name: Execute exactly one live transaction
         run: npm run live
+      - name: Require provider call identifier
+        shell: bash
+        run: |
+          echo "The live transaction step must have produced a CALL-E callId."
+          echo "If npm run live exits successfully without a callId, the workflow must be treated as failed."

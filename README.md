@@ -12,7 +12,7 @@ The repository implements a bounded control plane around phone execution: policy
 
 `src/research-adapters.ts` adds bounded interfaces for latent-space messaging, cross-examination, firewalling, bounded infinite-horizon planning, controlled noise, legacy bridging, pre-trained knowledge retention, offline fallback, few-shot tool plans, meta-architecture candidates, zero-shot domain adaptation, MAML-style adaptation metrics, model distillation, Bayesian A/B, adaptive trust, multimodal fusion, predictive fetch, backoff/jitter primitives, latency budgets, asynchronous concurrency, fuzzy clarification, DAG planning, HNSW-style candidate selection and zero-trust authorization.
 
-### Meta-Architect capabilities 34–69
+### Meta-Architect capabilities 
 
 `src/meta-architect-34-69.ts` is the dedicated governed implementation layer for the requested evolution, causal, memory-consolidation, meta-learning, homeostasis, recursive-state, semantic-cache, latent-message, cross-examination, constitutional-refusal, temporal-decay, resource-sharing, compression, multimodal, load-shedding, domain-adaptation, handshake, chaos, Pareto, bounded-horizon, noise, legacy, retention, offline-fallback, curriculum, defragmentation, schema-alignment, modality-switching, Bayesian A/B, trust, few-shot-tool-plan and meta-architecture capabilities.
 
@@ -20,7 +20,6 @@ The repository implements a bounded control plane around phone execution: policy
 
 Full mapping: `docs/meta-architect-34-69.md`. Dedicated regression suite: `tests/meta-architect-34-69.test.ts`.
 
-### ASI Transcendence capabilities 70–88
 
 `src/asi-transcendence-stack.ts` adds bounded contracts for Active Inference/Free Energy, TDA concept-manifold analysis, Gödelian gating, polysemantic feature attribution, semantic relation propagation, fractal swarm instantiation, autopoietic boundaries, cross-modal transfer, ZK-style commitment verification, ontological annealing, anticipatory future-memory records, HDC/VSA binding/bundling, QASM compilation boundaries, causal-emergence macro-agents, nested world simulation, hardware-target IR, NARS belief ranking, CEV predicates and temporal inversion correction.
 
@@ -28,7 +27,6 @@ These are deliberately bounded: QPU/FPGA dispatch, zk-SNARK proving, autonomous 
 
 Full mapping: `docs/asi-transcendence-70-88.md`. Dedicated regression suite: `tests/asi-transcendence-stack.test.ts`.
 
-### Transcendence capabilities 89–99
 
 `src/transcendence-89-99.ts` adds bounded contracts for Synthetic Category Theory (`objects → morphisms → functor mapping`), multi-valued/perspectival epistemic logic, contradiction-isolating epistemic defragmentation, bounded DGM swarm branching/validated merge, non-executable hardware/software transpilation targets, formal-constraint + adversarial mutation approval, substrate latency/energy/thermal optimization, quantum-classical planning boundaries, energy-aware gating, constitutional alignment integrity checks and epistemic humility/rollback readiness.
 

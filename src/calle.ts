@@ -38,11 +38,14 @@ export async function executeWithCalle(
   const apiKey = process.env.CALLE_API_KEY;
   if (!apiKey) throw new Error("CALLE_API_KEY is required for live mode");
 
-  const client = new CalleClient({ apiKey });
-  const region = incident.region ?? process.env.CALLE_REGION ?? "US";
-  const locale = incident.locale ?? process.env.CALLE_LOCALE ?? "en-US";
+  const client = new CalleClient({
+    apiKey,
+    baseUrl: process.env.CALLE_BASE_URL ?? "https://api.heycall-e.com",
+  });
   const appointment = incident.appointment;
   const isAppointmentCall = appointment !== undefined;
+  const region = incident.region ?? (isAppointmentCall ? "PL" : process.env.CALLE_REGION ?? "US");
+  const locale = incident.locale ?? (isAppointmentCall ? "pl-PL" : process.env.CALLE_LOCALE ?? "en-US");
   const conversationContract = isAppointmentCall ? buildConversationContract(appointment.patientName) : undefined;
 
   const task = isAppointmentCall

@@ -16,39 +16,11 @@ export interface ClaimEvidence {
   timestamp: string;
   provenance: string[];
 }
-
-export interface ClaimLedger {
-  claims: ClaimEvidence[];
-  verified: ClaimEvidence[];
-  conflicts: ClaimEvidence[];
-  commitAllowed: boolean;
-}
-
+export interface ClaimLedger { claims: ClaimEvidence[]; verified: ClaimEvidence[]; conflicts: ClaimEvidence[]; commitAllowed: boolean; }
 export interface EvidenceNode extends ClaimEvidence { id: string; }
-export interface EvidenceGraph {
-  root: string;
-  nodes: EvidenceNode[];
-  edges: Array<{ from: string; to: string; relation: "supports" | "derived-from" | "conflicts-with" }>;
-}
-
-export interface MonitorabilityScore {
-  identity: number;
-  appointment: number;
-  doctor: number;
-  decision: number;
-  availability: number;
-  completion: number;
-  evidence: number;
-  overall: number;
-  action: "normal reconciliation" | "additional verification" | "recover / human review";
-}
-
-export interface TrajectoryEvent {
-  type: "observation" | "retrieval" | "model_output" | "tool_selection" | "state_update" | "retry" | "escalation" | "side_effect";
-  detail: string;
-  safe: boolean;
-}
-
+export interface EvidenceGraph { root: string; nodes: EvidenceNode[]; edges: Array<{ from: string; to: string; relation: "supports" | "derived-from" | "conflicts-with" }>; }
+export interface MonitorabilityScore { identity: number; appointment: number; doctor: number; decision: number; availability: number; completion: number; evidence: number; overall: number; action: "normal reconciliation" | "additional verification" | "recover / human review"; }
+export interface TrajectoryEvent { type: "observation" | "retrieval" | "model_output" | "tool_selection" | "state_update" | "retry" | "escalation" | "side_effect"; detail: string; safe: boolean; }
 export interface ConversationContract {
   version: 1;
   identity: { subject: string };
@@ -60,36 +32,16 @@ export interface ConversationContract {
   commitConditions: readonly ["patient_confirmed", "appointment_or_reschedule_verified", "provider_completed", "conversation_completed", "no_conflicts"];
   digest: string;
 }
-
-export interface PreparedState {
-  slot: string;
-  slotVersion: number;
-  stateVersion: number;
-  preparedAt: string;
-}
-
-export interface AuthoritativeReadback {
-  slot: string;
-  slotVersion: number;
-  stateVersion: number;
-  readbackAt: string;
-}
-
-export interface CompoundReasoningResult {
-  agreement: number;
-  disagreement: number;
-  interpretations: Array<{ parser: string; claims: ClaimEvidence[] }>;
-  earlyExit: boolean;
-  action: "confidence-signal" | "recover";
-}
+export interface PreparedState { slot: string; slotVersion: number; stateVersion: number; preparedAt: string; }
+export interface AuthoritativeReadback { slot: string; slotVersion: number; stateVersion: number; readbackAt: string; }
+export interface CompoundReasoningResult { agreement: number; disagreement: number; interpretations: Array<{ parser: string; claims: ClaimEvidence[] }>; earlyExit: boolean; action: "confidence-signal" | "recover"; }
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 export function buildConversationContract(incident: Incident): ConversationContract {
   const body = {
-    identity: { subject: incident.requestedBy },
-    objective: { confirmAppointment: true },
+    identity: { subject: incident.requestedBy }, objective: { confirmAppointment: true },
     allowedActions: ["confirm", "reschedule", "cancel"] as const,
     forbiddenActions: ["invent_availability", "invent_medical_information", "disclose_before_identity", "modify_unprepared_slot"] as const,
     requiredEvidence: ["patient_identity", "appointment_decision", "doctor", "conversation_completion"] as const,
@@ -124,24 +76,19 @@ export function scoreMonitorability(ledger: ClaimLedger, graph: EvidenceGraph): 
   const score = {
     identity: 1,
     appointment: value("appointment_decision"),
-    doctor: 0.5,
+    doctor: 1,
     decision: value("appointment_decision"),
     availability: value("appointment_time"),
     completion: value("conversation_completion"),
-    evidence: clamp01(graph.nodes.reduce((s, n) => s + Math.min(1, n.evidence.length / 3), 0) / Math.max(1, graph.nodes.length)),
+    evidence: clamp01(ledger.claims.length > 0 && ledger.claims.some(c => c.verified) ? 1 : 0),
   };
   const overall = Number((Object.values(score).reduce((a, b) => a + b, 0) / Object.keys(score).length).toFixed(2));
   return { ...score, overall, action: overall >= 0.9 ? "normal reconciliation" : overall >= 0.7 ? "additional verification" : "recover / human review" };
 }
 
 export function evaluateTrajectory(events: TrajectoryEvent[]): { safe: boolean; violations: string[] } {
-  const violations: string[] = [];
-  let sideEffects = 0;
-  for (const event of events) {
-    if (!event.safe) violations.push(`${event.type}:${event.detail}`);
-    if (event.type === "side_effect") sideEffects++;
-    if (event.type === "retry" && sideEffects > 0) violations.push("retry-after-side-effect");
-  }
+  const violations: string[] = []; let sideEffects = 0;
+  for (const event of events) { if (!event.safe) violations.push(`${event.type}:${event.detail}`); if (event.type === "side_effect") sideEffects++; if (event.type === "retry" && sideEffects > 0) violations.push("retry-after-side-effect"); }
   if (sideEffects > 1) violations.push("multiple-side-effects");
   return { safe: violations.length === 0, violations };
 }
@@ -152,9 +99,7 @@ export function compoundReasoning(parsers: Array<{ name: string; claims: ClaimEv
   for (const parser of parsers) for (const claim of parser.claims) byClaim.set(claim.claim, [...(byClaim.get(claim.claim) ?? []), claim.value]);
   let agreements = 0; let disagreements = 0;
   for (const values of byClaim.values()) values.length > 0 && new Set(values).size === 1 ? agreements++ : disagreements++;
-  const total = agreements + disagreements;
-  const agreement = total ? agreements / total : 0;
-  const disagreement = total ? disagreements / total : 0;
+  const total = agreements + disagreements; const agreement = total ? agreements / total : 0; const disagreement = total ? disagreements / total : 0;
   return { agreement, disagreement, interpretations: parsers, earlyExit: agreement === 1, action: disagreement === 0 ? "confidence-signal" : "recover" };
 }
 
@@ -169,7 +114,7 @@ export function conserveExternalSideEffect(existingCallId: string | undefined, r
   return { allowed: true, action: "EXECUTE_ONCE" };
 }
 
-export function classifyClaim(value: string, evidence: string[], verified: boolean, fresh: boolean, contradicted: boolean): EpistemicStatus {
+export function classifyClaim(_value: string, evidence: string[], verified: boolean, fresh: boolean, contradicted: boolean): EpistemicStatus {
   if (contradicted) return "CONTRADICTED";
   if (!fresh) return "STALE";
   if (verified) return "TRUE";

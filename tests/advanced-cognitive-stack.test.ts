@@ -54,7 +54,7 @@ describe("advanced bounded cognitive stack", () => {
     const candidate = alphaEvolve(parent, "bounded-cache", 2, 0.5, { sandbox: true, redTeam: true, formal: true });
     expect(candidate.genotype.architecture).toContain("bounded-cache");
     expect(candidate.redTeamPassed).toBe(true);
-    expect(mutationLoop(parent, ["safe-a", "safe-b"], (c) => ({ ...c, fitness: 2, testsPassed: true, redTeamPassed: true, formalPassed: true })))?.toBeDefined();
+    expect(mutationLoop(parent, ["safe-a", "safe-b"], (c) => ({ ...c, fitness: 2, testsPassed: true, redTeamPassed: true, formalPassed: true }))).toBeDefined();
   });
 
   it("enforces RSI, self-correction, formal and constitutional gates", () => {
@@ -88,13 +88,10 @@ describe("advanced bounded cognitive stack", () => {
     expect(counterfactualScore(a, b)).toBeCloseTo(0.6);
     expect(abTest(1, 2, (x) => x).winner).toBe("candidate");
     expect(antiRewardHacking(1, 0.2, 0.1)).toBeCloseTo(0.7);
-    expect(paretoSelect([
-      { latencyMs: 10, costUsd: 1, errorRate: 0.1 },
-      { latencyMs: 20, costUsd: 2, errorRate: 0.2 },
-    ])).toHaveLength(1);
+    expect(paretoSelect([{ latencyMs: 10, costUsd: 1, errorRate: 0.1 }, { latencyMs: 20, costUsd: 2, errorRate: 0.2 }])).toHaveLength(1);
     expect(chaosScenario(["api", "memory", "phone"], "api")).toEqual(["memory", "phone"]);
     expect(crossSystemHandshake(["zenoh", "mcp"], "zenoh")).toBe(true);
-    expect(cognitiveModulation({ load: 0.5, trust: 0.8 }, { loadDelta: 0.1 })).toBeDefined();
+    expect(cognitiveModulation(0.5, 2)).toBe(1);
     expect(agentDevel({ id: "c", genotype: digitalGenotype(["x"]), fitness: 1, computeCost: 1, testsPassed: true, redTeamPassed: true, formalPassed: true }, true, true).constitutionalSafe).toBe(true);
   });
 
@@ -116,10 +113,7 @@ describe("advanced bounded cognitive stack", () => {
 
   it("supports retrospective correction and point-in-time recovery", () => {
     expect(retrospectiveCorrection({ incidentId: "i", failure: "bad", correction: "escalate", confidence: 2 }).confidence).toBe(1);
-    expect(pointInTimeRecovery([
-      { state: "v1", validAt: "2026-09-01T00:00:00Z", recordedAt: "2026-09-01T01:00:00Z" },
-      { state: "v2", validAt: "2026-09-02T00:00:00Z", recordedAt: "2026-09-03T01:00:00Z" },
-    ], "2026-09-02T12:00:00Z", "2026-09-03T02:00:00Z")).toBe("v2");
+    expect(pointInTimeRecovery([{ state: "v1", validAt: "2026-09-01T00:00:00Z", recordedAt: "2026-09-01T01:00:00Z" }, { state: "v2", validAt: "2026-09-02T00:00:00Z", recordedAt: "2026-09-03T01:00:00Z" }], "2026-09-02T12:00:00Z", "2026-09-03T02:00:00Z")).toBe("v2");
   });
 
   it("keeps Digital Nexus and GCP authorization bounded", () => {

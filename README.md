@@ -11,40 +11,19 @@ AegisFleet turns a logistics incident into a controlled phone workflow: validate
 A voice agent is only useful to an enterprise when its output can be bounded and connected safely to the next business action. AegisFleet therefore focuses on the control plane around the phone call rather than on conversation quality alone.
 
 ```text
-incident
-  ↓
-policy gate
-  ↓
-idempotency reservation
-  ↓
-CALL-E / deterministic simulator
-  ↓
-strict outcome validation
-  ↓
-evidence + confidence gate
-  ├── resolved → ERP-ready decision
-  └── escalated → human action
-  ↓
-audit ledger
-  ↓
-reflexion / retrospective finding
-  ↓
-bitemporal episodic memory
+incident → policy gate → idempotency reservation → CALL-E / simulator
+→ strict outcome validation → evidence + confidence gate
+→ resolved / escalated → audit ledger → reflexion → bitemporal memory
 ```
 
 ## Implemented
 
-- TypeScript domain model and explicit incident state machine.
-- Policy gate with E.164 validation, purpose-bounded goals, live-mode opt-in and fixture-number protection.
-- Deterministic dry-run simulator that follows the same outcome-validation path as live execution.
-- CALL-E server SDK adapter with strict result extraction and validation.
-- JSON Schema contract with `additionalProperties: false` and explicit `unknown` states.
-- Application-level idempotency reservation before provider I/O.
-- Evidence-backed automatic resolution; uncertainty never becomes an implicit success/failure.
-- Human escalation on policy rejection, execution errors, insufficient evidence, low confidence or explicit escalation.
-- Replay-aware webhook contract and event-ID deduplication.
-- Hash-linked audit records for tamper-evident sequencing inside the prototype ledger.
-- Bitemporal decision memory with valid-time / recording-time separation and point-in-time reconstruction.
+- Explicit incident state machine and E.164/purpose-bounded policy gate.
+- Deterministic dry-run simulator and CALL-E server SDK adapter.
+- Closed structured outcome schema with explicit `unknown` states.
+- Idempotency before provider I/O, evidence/confidence resolution gate and human escalation.
+- Replay-aware webhooks and hash-linked audit ledger.
+- Bitemporal decision memory with point-in-time reconstruction.
 - Decision Intelligence, bounded Reflexion, retrospective correction and deterministic Synthetic Red-Team coverage.
 - Bounded cognitive control layer: working memory, HDC/holographic associative indexing, Shimi-style semantic retrieval with temporal decay, counterfactual causal analysis, capability-scoped MCP gateway boundary, Pareto selection, adaptive load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation/evolution evaluation.
 - Automated regression tests and GitHub Actions CI.
@@ -57,6 +36,8 @@ The mutation/evolution protocol is proposal-only: sandbox → red-team → forma
 
 CoALA, JEPA, Graph of Thought, R2/R3 reasoning, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS and proprietary DeepMind architectures remain research tracks requiring actual model implementations and reproducible evaluation.
 
+See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md).
+
 ## Quick start
 
 ```bash
@@ -64,16 +45,14 @@ npm install
 npm run demo
 npm test
 npm run typecheck
+npm run verify:final
 ```
 
 ## Live CALL-E execution
 
-1. Copy `.env.example` to `.env`.
-2. Add a valid `CALLE_API_KEY`.
-3. Set a provisioned test number with `AEGIS_LIVE_PHONE`.
-4. Run `npm run live`.
+The repository includes a manual `LIVE CALL-E Test` workflow. It requires explicit confirmation, validates `CALLE_API_KEY` and `AEGIS_LIVE_PHONE`, performs a no-call authentication preflight, then executes exactly one live transaction against the current `main` revision.
 
-Live mode is intentionally explicit and does not silently downgrade to dry-run.
+Live mode is explicit and does not silently downgrade to dry-run.
 
 ## Result contract
 
@@ -89,13 +68,9 @@ Live mode is intentionally explicit and does not silently downgrade to dry-run.
 
 Automatic resolution requires acceptance = `yes`, non-empty ETA, escalation = `none`, non-empty evidence and confidence = `high`. Otherwise the incident becomes `escalated`.
 
-## Architecture
+## Architecture / evaluation / submission
 
-See [`docs/architecture.md`](docs/architecture.md), [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md), [`docs/evaluation.md`](docs/evaluation.md) and [`docs/security.md`](docs/security.md).
-
-## Demo and submission
-
-See [`docs/demo-script.md`](docs/demo-script.md), [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSION.md`](SUBMISSION.md). The repository does not fabricate a deployment, live credential, contribution PR or recorded video.
+See [`docs/architecture.md`](docs/architecture.md), [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md), [`docs/evaluation.md`](docs/evaluation.md), [`docs/security.md`](docs/security.md), [`docs/demo-script.md`](docs/demo-script.md), [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSION.md`](SUBMISSION.md).
 
 ## Community contribution package
 
@@ -169,10 +144,11 @@ A provider-neutral reusable Agent Skill is prepared at `docs/community-contribut
 
 ### 2026-09-14
 
-- Added and tested bounded cognitive-control primitives requested for the architecture.
-- Fixed the strict TypeScript indexed-access defect exposed by CI.
-- Corrected the live CALL-E workflow to test the current `main` revision instead of the historical feature branch.
-- Kept DGM/AlphaEvolve/RSI mutation proposal-only with explicit safety gates.
+- Implemented and tested bounded cognitive-control primitives requested for the architecture.
+- Fixed strict TypeScript indexed-access validation exposed by CI.
+- Corrected the live CALL-E workflow to execute current `main` rather than the historical feature branch.
+- Persisted the implementation and boundaries in `README.md` and `docs/cognitive-control-plane.md`.
+- Kept DGM/AlphaEvolve/RSI mutation proposal-only: no autonomous source mutation, production hot-swap, credential access or phone-executor self-modification.
 
 ## License
 

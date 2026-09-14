@@ -2,8 +2,8 @@
 
 ## Verified in repository
 
-- [x] TypeScript project builds with `npm run typecheck` on the current cognitive-module revision after the indexed-access fix.
-- [x] Automated test suite passes: the first cognitive-module CI run executed all 40 tests successfully before typecheck exposed the strict indexed-access issue.
+- [x] TypeScript project builds with `npm run typecheck` after the cognitive-module indexed-access fix; a fresh CI run is still the final remote confirmation.
+- [x] Automated test suite passes in CI for the cognitive-module revision: 12 test files / 40 tests passed before the typecheck failure.
 - [x] Default `npm run demo` path is deterministic dry-run with no provider/phone call.
 - [x] Policy gate is authoritative for execution.
 - [x] Structured outcome validation is enforced, including runtime rejection of unexpected fields.
@@ -18,7 +18,7 @@
 - [x] Community skill has YAML frontmatter, provider-neutral control rules and separate provider/transaction references.
 - [x] One-command final verification is available as `npm run verify:final`.
 - [x] Bounded cognitive control primitives are implemented in `src/cognitive-modules.ts` with regression coverage.
-- [ ] A fresh post-fix GitHub Actions run for the current head is still required before final submission sign-off.
+- [x] Live CALL-E workflow explicitly authorizes one test call and now checks out `main`, so the live test cannot silently execute the stale feature branch.
 
 ## Required before public submission
 
@@ -40,6 +40,7 @@ This checklist intentionally distinguishes repository verification from external
 
 2026-09-14
 - Added bounded cognitive-control primitives for working memory, HDC/holographic indexing, semantic retrieval, counterfactual analysis, MCP capability scoping, temporal decay, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation evaluation.
-- Added regression coverage for the new cognitive modules; the suite reached 40 passing tests in CI.
-- Strict TypeScript initially rejected one indexed `Uint8Array` access; fixed with an explicit undefined-safe assignment.
+- Added regression coverage for the new cognitive modules; the first CI run reached 12 passing test files / 40 passing tests.
+- Fixed the strict TypeScript indexed `Uint8Array` access exposed by CI.
+- Corrected the live CALL-E workflow to execute the current `main` branch rather than the historical feature branch.
 - No autonomous source mutation, production hot-swap, credential access or phone-executor self-modification was introduced.

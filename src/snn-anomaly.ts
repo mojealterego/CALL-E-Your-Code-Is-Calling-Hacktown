@@ -18,11 +18,11 @@ export interface SNNAnomalyResult {
 export function detectTemporalAnomaly(events: EventSample[], threshold = 0.8): SNNAnomalyResult {
   if (events.length < 2) return { spikes: [], anomalyScore: 0, anomalous: false, reason: "Insufficient event history." };
   const intervals = events.slice(1).map((event, index) => event.timestampMs - (events[index]?.timestampMs ?? event.timestampMs));
-  const mean = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
-  const variance = intervals.reduce((sum, value) => sum + (value - mean) ** 2, 0) / intervals.length;
-  const std = Math.sqrt(variance);
-  const spikes = intervals.map((interval) => std === 0 ? 0 : Math.abs(interval - mean) / std >= 2 ? 1 : 0);
-  const anomalyScore = spikes.length ? spikes.reduce((sum, spike) => sum + spike, 0) / spikes.length : 0;
+  const ordered = [...intervals].sort((a, b) => a - b);
+  const median = ordered[Math.floor(ordered.length / 2)] ?? 0;
+  if (median <= 0) return { spikes: [], anomalyScore: 0, anomalous: false, reason: "Temporal intervals are invalid or zero-length." };
+  const spikes = intervals.map((interval) => interval >= median * 3 || interval <= median / 3 ? 1 : 0);
+  const anomalyScore = spikes.reduce((sum, spike) => sum + spike, 0) / spikes.length;
   return {
     spikes,
     anomalyScore,

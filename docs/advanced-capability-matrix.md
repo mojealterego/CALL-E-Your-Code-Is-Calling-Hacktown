@@ -20,7 +20,10 @@ This matrix records the requested concepts and the bounded implementation status
 | R3 Titans reasoning | bounded `r3TitansReasoning` |
 | Reasoning | deterministic premise aggregation/scoring primitives |
 | Reflexion loop | `src/reflexion.ts` and orchestrator integration |
-| SNN | `snnEncode` spike-event representation |
+| SNN — spiking neural networks | Rust LIF implementation in `rust/snn-zenoh/src/lib.rs`, explicit spike events and fail-closed 1 ms budget status |
+| SNN TypeScript boundary | `snnEncode` remains the deterministic control-plane representation; Rust owns the low-latency neuronal fast path |
+| Zenoh | Optional Rust `zenoh` 1.x transport feature with `publish_frame`; transport is isolated from policy authority |
+| 1 ms latency target | Rust `DEFAULT_BUDGET = 1 ms`; each frame reports measured elapsed time and budget compliance. This is a target/gate, not a hardware/network guarantee |
 | Decision / Decision Cycle | `decisionCycle` and `DecisionOption` controls |
 | GoT / Graph of Thought | `GraphOfThought` |
 | JEPA | `jepaPredict` bounded predictive-state proxy |
@@ -32,7 +35,8 @@ This matrix records the requested concepts and the bounded implementation status
 | SEGPA | formal invariant gate alias |
 | Synthetic red team | `src/red-team.ts` |
 | RAG 2.0 | `RAG2` retrieve + temporal weighting + grounding |
-| ImandraX | `imandraXGuard` invariant gate abstraction |
+| ImandraX-style formal gate | `src/imandrax-mars.ts`: deterministic proof-request boundary + local fail-closed invariant gate; replaceable with an authorized ImandraX integration |
+| MARS | `MARSController` / `marsCycle`: one bounded metacognitive reflection cycle producing principle/procedural refinements without source mutation |
 | Episodic memory | bitemporal Reflexion findings + CoALA episodic layer |
 | Working memory | `WorkingMemory` bounded capacity + TTL |
 | Long-term memory | bitemporal episodic/procedural/semantic storage abstractions |
@@ -67,13 +71,13 @@ This matrix records the requested concepts and the bounded implementation status
 | Automated firewalling | policy/adversarial gate boundary; no deceptive external behavior |
 | Pareto optimization | `paretoSelect` and existing `paretoFront` |
 | Infinite-horizon planning | bounded decision search; no unbounded simulation |
-| Controlled noise | research-track; no stochastic production mutation enabled |
+| Controlled noise | bounded deterministic noise adapter; no stochastic production mutation |
 | Legacy bridging | provider-neutral adapter boundary |
-| Pre-trained retention | research-track; no model weight training in this repo |
+| Pre-trained retention | bounded retention contract; no model weight training in this repo |
 | Offline fallback | deterministic local demo and provider boundary |
 | A/B testing | `abTest` |
 | Graceful degradation of trust | `trustGate` + existing trust adjustment |
-| Few-shot tool generation | research-track; no arbitrary code execution enabled |
+| Few-shot tool generation | non-executable plan representation only |
 | Meta-architecture generation | bounded genotype/candidate representation only |
 | Schema alignment | `schemaAlign` |
 | Dynamic modality switching | `modalitySwitch` |
@@ -83,4 +87,4 @@ This matrix records the requested concepts and the bounded implementation status
 
 ## Safety boundary
 
-The evolutionary stack cannot authorize a live phone transaction. Candidate generation, mutation, sandbox/red-team/formal checks, benchmark comparison, shadow evaluation and approval are separate from the operational policy gate. A research abstraction never bypasses the authoritative incident policy, evidence, confidence or idempotency controls.
+The evolutionary stack, Rust SNN fast path and MARS/formal reasoning layer cannot authorize a live phone transaction. SNN output is a signal, Zenoh is transport, MARS is reflection, and ImandraX-style verification is a proof/gate boundary. The authoritative incident policy, evidence, confidence and idempotency controls remain the final operational authority.

@@ -20,6 +20,14 @@ The repository implements a bounded control plane around phone execution: policy
 
 Full mapping: `docs/meta-architect-34-69.md`. Dedicated regression suite: `tests/meta-architect-34-69.test.ts`.
 
+### ASI Transcendence capabilities 70–88
+
+`src/asi-transcendence-stack.ts` adds bounded contracts for Active Inference/Free Energy, TDA concept-manifold analysis, Gödelian gating, polysemantic feature attribution, semantic relation propagation, fractal swarm instantiation, autopoietic boundaries, cross-modal transfer, ZK-style commitment verification, ontological annealing, anticipatory future-memory records, HDC/VSA binding/bundling, QASM compilation boundaries, causal-emergence macro-agents, nested world simulation, hardware-target IR, NARS belief ranking, CEV predicates and temporal inversion correction.
+
+These are deliberately bounded: QPU/FPGA dispatch, zk-SNARK proving, autonomous weight/source mutation and historical rewriting are not silently performed. Hardware changes always require human approval. Future-memory rendering is a bounded scenario cache, not precognition.
+
+Full mapping: `docs/asi-transcendence-70-88.md`. Dedicated regression suite: `tests/asi-transcendence-stack.test.ts`.
+
 ### Rust SNN + Zenoh fast path
 
 `rust/snn-zenoh/` adds an actual Rust leaky-integrate-and-fire spiking-neural-network fast path. Each inference frame emits explicit spike events and carries an enforced **1 ms target budget** with measured elapsed time. Optional feature `zenoh-transport` adds Zenoh 1.x publication of serialized SNN frames. The budget is a gate/target, not a claim that arbitrary hardware or networks will always deliver sub-millisecond end-to-end latency.
@@ -52,6 +60,7 @@ The manual `LIVE CALL-E Test` workflow requires explicit authorization, validate
 npm install
 npm run verify:final
 npm run verify:meta
+npm run verify:asi
 ```
 
 Rust fast-path verification:
@@ -74,6 +83,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 - Added the advanced cognitive stack and capability matrix covering CoALA, G-memory, HDC/holographic memory, Shimi index, MCP/GCP boundaries, AlphaEvolve/DGM/genotype/mutation/RSI, R2/R3 reasoning, SNN, JEPA-style prediction, GoT, adversarial/constitutional/formal gates, RAG 2.0, AB-MCTS, offline replay/digital sleep, retrospective correction and point-in-time recovery.
 - Added bounded research adapters for the remaining meta-architecture skills, including negotiation/data-driven decision contracts, resilience, adaptive routing, zero-trust boundaries and non-executable tool/architecture generation.
 - Added the dedicated governed Meta-Architect 34–69 layer and regression suite, including a six-gate RSI release protocol with mandatory rollback on failed evidence.
+- Added the ASI Transcendence 70–88 bounded layer and dedicated regression suite.
 - Added a Rust LIF SNN fast path with explicit 1 ms budget accounting and optional Zenoh 1.x transport.
 - Added bounded ImandraX-style proof-request/invariant gating and a one-cycle MARS metacognitive reflection controller.
 - Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.

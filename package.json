@@ -12,6 +12,7 @@
     "verify:meta": "npm test -- tests/meta-architect-34-69.test.ts",
     "verify:asi": "npm test -- tests/asi-transcendence-stack.test.ts",
     "verify:transcendence": "npm test -- tests/transcendence-89-99.test.ts",
+    "verify:assurance": "npm test -- tests/assurance-fabric.test.ts",
     "verify:final": "npm test && npm run typecheck && npm run demo"
   },
   "dependencies": {

@@ -43,7 +43,6 @@ export async function runIncident(
       reflexionMemory,
       reflectOnExecution(incident, operationKey, {
         state: "escalated",
-        outcome: record.outcome,
         policyPassed: false,
       }),
     );
@@ -59,15 +58,13 @@ export async function runIncident(
       ? await executeWithCalle(incident, operationKey)
       : { outcome: simulateCall(incident) };
     const outcome = validateOutcome(raw.outcome);
-    const record = ledger.transition(
-      operationKey,
-      canResolve(outcome) ? "resolved" : "escalated",
-      { ...(raw.callId ? { callId: raw.callId } : {}), outcome },
-    );
+    const state = canResolve(outcome) ? "resolved" : "escalated";
+    const patch = raw.callId !== undefined ? { callId: raw.callId, outcome } : { outcome };
+    const record = ledger.transition(operationKey, state, patch);
     const reflexion = storeReflexionFinding(
       reflexionMemory,
       reflectOnExecution(incident, operationKey, {
-        state: record.state,
+        state,
         outcome,
         policyPassed: true,
       }),
@@ -82,7 +79,6 @@ export async function runIncident(
       reflexionMemory,
       reflectOnExecution(incident, operationKey, {
         state: "escalated",
-        outcome: record.outcome,
         error: message,
         policyPassed: true,
       }),

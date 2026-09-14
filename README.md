@@ -10,6 +10,8 @@ The repository implements a bounded control plane around phone execution: policy
 
 `src/advanced-cognitive-stack.ts` contains the requested bounded research-capability layer: CoALA memory control, G-memory, bitemporal graph memory, HDC, RAG 2.0, Graph of Thought, digital genotype, mutation engine/loop, AlphaEvolve/DGM candidate evolution, RSI with rollback, R2/R3-style reasoning primitives, SNN spike encoding, JEPA-style predictive-state scoring, Decision/AB-MCTS, counterfactual scoring, adversarial gating, CEV, GCP authorization, Gödel/ImandraX/SEGPA invariant guards, OESI evidence gating, Agent Devel, self-correction, offline replay/digital sleep, synaptic pruning, curriculum learning, temporal decay, anti-reward-hacking, schema alignment, modality switching, semantic caching, load shedding, resource donation, chaos planning, Pareto selection, retrospective correction, point-in-time recovery, procedural memory and Digital Nexus introspection/modulation.
 
+`src/research-adapters.ts` adds bounded interfaces for latent-space messaging, cross-examination, firewalling, bounded infinite-horizon planning, controlled noise, legacy bridging, pre-trained knowledge retention, offline fallback, few-shot tool plans, meta-architecture candidates, zero-shot domain adaptation, MAML-style adaptation metrics, model distillation, Bayesian A/B, adaptive trust, multimodal fusion, predictive fetch, backoff/jitter primitives, latency budgets, asynchronous concurrency, fuzzy clarification, DAG planning, HNSW-style candidate selection and zero-trust authorization.
+
 ### Rust SNN + Zenoh fast path
 
 `rust/snn-zenoh/` adds an actual Rust leaky-integrate-and-fire spiking-neural-network fast path. Each inference frame emits explicit spike events and carries an enforced **1 ms target budget** with measured elapsed time. Optional feature `zenoh-transport` adds Zenoh 1.x publication of serialized SNN frames. The budget is a gate/target, not a claim that arbitrary hardware or networks will always deliver sub-millisecond end-to-end latency.
@@ -23,6 +25,10 @@ Zenoh is isolated as transport: it cannot bypass AegisFleet policy, evidence, co
 The mutation protocol remains proposal-only: observe → profile → hypothesis → generate → sandbox → red-team → formal check → benchmark → shadow → approval → release/rollback. It cannot overwrite source, secrets, policy, audit history or the phone executor. The advanced stack is deterministic TypeScript except for the explicitly isolated Rust SNN runtime; it does not claim to train JEPA/SNN/LLMs, reproduce proprietary DeepMind systems, or grant autonomous production self-modification.
 
 The complete mapping is maintained in `docs/advanced-capability-matrix.md`.
+
+## Meta-architecture operating skills
+
+The control plane also encodes bounded operational skills for negotiation, data-driven decisions, conflict resolution, emotional-intelligence-aware human escalation, critical thinking/red teaming, delegation through contracts, provider/model adaptability, context-window optimization, strict input validation, backoff/rate-limit resilience, memory consolidation, asynchronous concurrency, latency budgeting, controlled exploration/noise, anomaly and concept-drift detection, predictive prefetching, zero-trust sandboxing, goal/reward governance, knowledge distillation, service discovery boundaries, webhook/long-running-job handling, confidence-based human fallback, preference/penalty learning boundaries, heuristic fast paths, schema enforcement, graceful degradation, fuzzy clarification, DAG planning, semantic clustering/routing, reasoning audit boundaries and global knowledge-graph construction. These are deterministic contracts and decision gates; they do not grant unrestricted autonomy or self-modification.
 
 ## Safety default
 
@@ -57,8 +63,10 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 
 - Implemented and tested bounded cognitive-control primitives requested for the architecture.
 - Added the advanced cognitive stack and capability matrix covering CoALA, G-memory, HDC/holographic memory, Shimi index, MCP/GCP boundaries, AlphaEvolve/DGM/genotype/mutation/RSI, R2/R3 reasoning, SNN, JEPA-style prediction, GoT, adversarial/constitutional/formal gates, RAG 2.0, AB-MCTS, offline replay/digital sleep, retrospective correction and point-in-time recovery.
+- Added bounded research adapters for the remaining meta-architecture skills, including negotiation/data-driven decision contracts, resilience, adaptive routing, zero-trust boundaries and non-executable tool/architecture generation.
 - Added a Rust LIF SNN fast path with explicit 1 ms budget accounting and optional Zenoh 1.x transport.
 - Added bounded ImandraX-style proof-request/invariant gating and a one-cycle MARS metacognitive reflection controller.
+- Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
 - Persisted the implementation and safety boundaries in repository documentation.

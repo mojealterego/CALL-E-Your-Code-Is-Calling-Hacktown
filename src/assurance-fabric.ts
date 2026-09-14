@@ -3,35 +3,13 @@ import type { CallOutcome, Incident } from "./domain.js";
 
 export type EpistemicStatus = "TRUE" | "FALSE" | "UNKNOWN" | "UNVERIFIED" | "CONTRADICTED" | "STALE";
 export type ClaimSource = "call-e" | "authoritative-system" | "derived" | "human";
-
-export interface ClaimEvidence {
-  claim: string;
-  value: string;
-  source: ClaimSource;
-  evidence: string[];
-  confidence: "high" | "medium" | "low" | "unknown";
-  authority: "authoritative" | "conversational" | "derived";
-  verified: boolean;
-  status: EpistemicStatus;
-  timestamp: string;
-  provenance: string[];
-}
+export interface ClaimEvidence { claim: string; value: string; source: ClaimSource; evidence: string[]; confidence: "high" | "medium" | "low" | "unknown"; authority: "authoritative" | "conversational" | "derived"; verified: boolean; status: EpistemicStatus; timestamp: string; provenance: string[]; }
 export interface ClaimLedger { claims: ClaimEvidence[]; verified: ClaimEvidence[]; conflicts: ClaimEvidence[]; commitAllowed: boolean; }
 export interface EvidenceNode extends ClaimEvidence { id: string; }
 export interface EvidenceGraph { root: string; nodes: EvidenceNode[]; edges: Array<{ from: string; to: string; relation: "supports" | "derived-from" | "conflicts-with" }>; }
 export interface MonitorabilityScore { identity: number; appointment: number; doctor: number; decision: number; availability: number; completion: number; evidence: number; overall: number; action: "normal reconciliation" | "additional verification" | "recover / human review"; }
 export interface TrajectoryEvent { type: "observation" | "retrieval" | "model_output" | "tool_selection" | "state_update" | "retry" | "escalation" | "side_effect"; detail: string; safe: boolean; }
-export interface ConversationContract {
-  version: 1;
-  identity: { subject: string };
-  objective: { confirmAppointment: true };
-  allowedActions: readonly ["confirm", "reschedule", "cancel"];
-  forbiddenActions: readonly ["invent_availability", "invent_medical_information", "disclose_before_identity", "modify_unprepared_slot"];
-  requiredEvidence: readonly ["patient_identity", "appointment_decision", "doctor", "conversation_completion"];
-  conditionalEvidence: { firstVisitYes: readonly ["identity_document_reminder", "arrive_30_minutes_early", "registration", "information_form"]; firstVisitNo: readonly [] };
-  commitConditions: readonly ["patient_confirmed", "appointment_or_reschedule_verified", "provider_completed", "conversation_completed", "no_conflicts"];
-  digest: string;
-}
+export interface ConversationContract { version: 1; identity: { subject: string }; objective: { confirmAppointment: true }; allowedActions: readonly ["confirm", "reschedule", "cancel"]; forbiddenActions: readonly ["invent_availability", "invent_medical_information", "disclose_before_identity", "modify_unprepared_slot"]; requiredEvidence: readonly ["patient_identity", "appointment_decision", "doctor", "conversation_completion"]; conditionalEvidence: { firstVisitYes: readonly ["identity_document_reminder", "arrive_30_minutes_early", "registration", "information_form"]; firstVisitNo: readonly [] }; commitConditions: readonly ["patient_confirmed", "appointment_or_reschedule_verified", "provider_completed", "conversation_completed", "no_conflicts"]; digest: string; }
 export interface PreparedState { slot: string; slotVersion: number; stateVersion: number; preparedAt: string; }
 export interface AuthoritativeReadback { slot: string; slotVersion: number; stateVersion: number; readbackAt: string; }
 export interface CompoundReasoningResult { agreement: number; disagreement: number; interpretations: Array<{ parser: string; claims: ClaimEvidence[] }>; earlyExit: boolean; action: "confidence-signal" | "recover"; }
@@ -41,7 +19,7 @@ const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(va
 
 export function buildConversationContract(incident: Incident): ConversationContract {
   const body = {
-    identity: { subject: incident.requestedBy }, objective: { confirmAppointment: true },
+    identity: { subject: incident.requestedBy }, objective: { confirmAppointment: true as const },
     allowedActions: ["confirm", "reschedule", "cancel"] as const,
     forbiddenActions: ["invent_availability", "invent_medical_information", "disclose_before_identity", "modify_unprepared_slot"] as const,
     requiredEvidence: ["patient_identity", "appointment_decision", "doctor", "conversation_completion"] as const,
@@ -71,17 +49,9 @@ export function buildEvidenceGraph(ledger: ClaimLedger): EvidenceGraph {
   return { root, nodes, edges };
 }
 
-export function scoreMonitorability(ledger: ClaimLedger, graph: EvidenceGraph): MonitorabilityScore {
+export function scoreMonitorability(ledger: ClaimLedger, _graph: EvidenceGraph): MonitorabilityScore {
   const value = (claim: string) => ledger.claims.find(c => c.claim === claim)?.verified ? 1 : ledger.claims.find(c => c.claim === claim)?.status === "UNKNOWN" ? 0 : 0.5;
-  const score = {
-    identity: 1,
-    appointment: value("appointment_decision"),
-    doctor: 1,
-    decision: value("appointment_decision"),
-    availability: value("appointment_time"),
-    completion: value("conversation_completion"),
-    evidence: clamp01(ledger.claims.length > 0 && ledger.claims.some(c => c.verified) ? 1 : 0),
-  };
+  const score = { identity: 1, appointment: value("appointment_decision"), doctor: 1, decision: value("appointment_decision"), availability: value("appointment_time"), completion: value("conversation_completion"), evidence: ledger.claims.some(c => c.verified) ? 1 : 0 };
   const overall = Number((Object.values(score).reduce((a, b) => a + b, 0) / Object.keys(score).length).toFixed(2));
   return { ...score, overall, action: overall >= 0.9 ? "normal reconciliation" : overall >= 0.7 ? "additional verification" : "recover / human review" };
 }
@@ -100,7 +70,7 @@ export function compoundReasoning(parsers: Array<{ name: string; claims: ClaimEv
   let agreements = 0; let disagreements = 0;
   for (const values of byClaim.values()) values.length > 0 && new Set(values).size === 1 ? agreements++ : disagreements++;
   const total = agreements + disagreements; const agreement = total ? agreements / total : 0; const disagreement = total ? disagreements / total : 0;
-  return { agreement, disagreement, interpretations: parsers, earlyExit: agreement === 1, action: disagreement === 0 ? "confidence-signal" : "recover" };
+  return { agreement, disagreement, interpretations: parsers.map(p => ({ parser: p.name, claims: p.claims })), earlyExit: agreement === 1, action: disagreement === 0 ? "confidence-signal" : "recover" };
 }
 
 export function reconcileStaleState(prepared: PreparedState, readback: AuthoritativeReadback): { status: "CURRENT" | "STALE"; action: "COMMIT" | "RECOVER" } {

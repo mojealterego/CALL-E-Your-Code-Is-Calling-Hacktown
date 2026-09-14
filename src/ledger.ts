@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import type { CallOutcome, CallRecord, IncidentState } from "./domain.js";
 import { assertTransition } from "./fsm.js";
 
+function cloneRecord(record: CallRecord): CallRecord {
+  return structuredClone(record);
+}
+
 export class AuditLedger {
   private readonly records: CallRecord[] = [];
   private readonly historyRecords: CallRecord[] = [];
@@ -11,11 +15,11 @@ export class AuditLedger {
     const key = operationKey.trim();
     if (!key) throw new Error("operationKey is required");
     const existing = this.keys.get(key);
-    if (existing) return { ...existing };
+    if (existing) return cloneRecord(existing);
     const now = new Date().toISOString();
     const record: CallRecord = { operationKey: key, state: "detected", createdAt: now, updatedAt: now };
     this.commit(record);
-    return { ...record };
+    return cloneRecord(record);
   }
 
   transition(operationKey: string, state: IncidentState, patch: Partial<CallRecord> = {}): CallRecord {
@@ -30,7 +34,7 @@ export class AuditLedger {
       updatedAt: new Date().toISOString(),
     };
     this.commit(next);
-    return { ...next };
+    return cloneRecord(next);
   }
 
   complete(operationKey: string, outcome: CallOutcome, callId?: string): CallRecord {
@@ -38,11 +42,11 @@ export class AuditLedger {
       && Boolean(outcome.eta_update_time.trim())
       && outcome.escalation_needed === "none"
       && Boolean(outcome.evidence_summary.trim())
-      && outcome.confidence === "high";
-    return this.transition(operationKey, resolved ? "resolved" : "escalated", {
-      outcome,
-      ...(callId ? { callId } : {}),
-    });
+      && outcome.confidence === "high"
+      && outcome.task_completed === true;
+    if (!resolved) return this.transition(operationKey, "escalated", { outcome, ...(callId ? { callId } : {}) });
+    this.transition(operationKey, "verifying", { outcome, ...(callId ? { callId } : {}) });
+    return this.transition(operationKey, "resolved");
   }
 
   has(operationKey: string): boolean {
@@ -50,26 +54,27 @@ export class AuditLedger {
   }
 
   snapshot(): CallRecord[] {
-    return this.records.map((record) => ({ ...record }));
+    return this.records.map(cloneRecord);
   }
 
   history(): CallRecord[] {
-    return this.historyRecords.map((record) => ({ ...record }));
+    return this.historyRecords.map(cloneRecord);
   }
 
   private commit(record: CallRecord): void {
     const previous = this.historyRecords[this.historyRecords.length - 1];
     const eventBase: CallRecord = previous?.auditDigest
-      ? { ...record, previousAuditDigest: previous.auditDigest }
-      : { ...record };
+      ? { ...cloneRecord(record), previousAuditDigest: previous.auditDigest }
+      : cloneRecord(record);
     eventBase.auditDigest = this.digest(eventBase);
-    const event = Object.freeze({ ...eventBase });
+    const event = cloneRecord(eventBase);
+    Object.freeze(event);
     this.historyRecords.push(event);
 
     const existingIndex = this.records.findIndex((item) => item.operationKey === record.operationKey);
-    if (existingIndex >= 0) this.records[existingIndex] = { ...event };
-    else this.records.push({ ...event });
-    this.keys.set(record.operationKey, { ...event });
+    if (existingIndex >= 0) this.records[existingIndex] = cloneRecord(event);
+    else this.records.push(cloneRecord(event));
+    this.keys.set(record.operationKey, cloneRecord(event));
   }
 
   private digest(record: CallRecord): string {

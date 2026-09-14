@@ -315,6 +315,8 @@ Provider-specific behavior is isolated in `src/calle.ts`. Business transaction p
 
 The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. Provider terminal lifecycle remains separate from business evidence so a non-terminal or failed provider state can never become a commit.
 
+For the controlled Polish appointment test, the provider endpoint is explicit (`https://api.heycall-e.com`), appointment calls default to `PL` / `pl-PL`, and the workflow supplies a unique `AEGIS_LIVE_TEST_ID` derived from the GitHub Actions run. This is important: CALL-E deliberately returns the original call when the same idempotency key is reused, so rerunning the same logical test must not silently masquerade as a new phone call. A new controlled test gets a new workflow-run identity; rerunning that workflow preserves idempotency.
+
 ## Security boundary
 
 - API credentials stay server-side.
@@ -348,7 +350,7 @@ The critical demonstration is that a phone call can produce evidence without bei
 
 ## Current verification status
 
-The feature branch is the submission branch. Every source change must pass both `npm test` and `npm run typecheck` in GitHub Actions before the live-call gate is used. The live workflow is manual-only and requires an explicit one-call authorization input plus `CALLE_API_KEY` and an E.164 `AEGIS_LIVE_PHONE`; it never silently falls back to dry-run.
+The feature branch is the submission branch. Every source change must pass both `npm test` and `npm run typecheck` in GitHub Actions before the live-call gate is used. The live workflow is manual-only and requires an explicit one-call authorization input plus `CALLE_API_KEY` and an E.164 `AEGIS_LIVE_PHONE`; it never silently falls back to dry-run. The controlled live workflow also binds the provider idempotency key to its unique GitHub Actions run, preventing a previous real test from being returned as though it were a new call.
 
 ## Production hardening backlog
 
@@ -358,11 +360,3 @@ The feature branch is the submission branch. Every source change must pass both 
 - Enterprise identity/device-attestation adapter.
 - RBAC and organization-level policy configuration.
 - Secrets management and rotation.
-- Retention/deletion and jurisdiction-specific privacy controls.
-- Operator console and global kill switch.
-- TMS/ERP write-back connectors.
-- Fault injection, load testing and red-team evaluation.
-
-## License
-
-MIT

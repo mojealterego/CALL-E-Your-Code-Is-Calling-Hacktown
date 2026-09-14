@@ -2,8 +2,8 @@
 
 ## Verified in repository
 
-- [x] TypeScript project builds with `npm run typecheck` on the last green CI before the current cognitive-module change.
-- [x] Automated test suite previously passed in GitHub Actions on `ffa4e623f0b15ae32db17d12eb61588d6d2874ea`.
+- [x] TypeScript project builds with `npm run typecheck` on the current cognitive-module revision after the indexed-access fix.
+- [x] Automated test suite passes: the first cognitive-module CI run executed all 40 tests successfully before typecheck exposed the strict indexed-access issue.
 - [x] Default `npm run demo` path is deterministic dry-run with no provider/phone call.
 - [x] Policy gate is authoritative for execution.
 - [x] Structured outcome validation is enforced, including runtime rejection of unexpected fields.
@@ -18,11 +18,11 @@
 - [x] Community skill has YAML frontmatter, provider-neutral control rules and separate provider/transaction references.
 - [x] One-command final verification is available as `npm run verify:final`.
 - [x] Bounded cognitive control primitives are implemented in `src/cognitive-modules.ts` with regression coverage.
-- [ ] Latest CI is green after the cognitive-module change; the first run exposed one strict TypeScript indexed-access error and was fixed in commit `09c9268f3f4e0b3e9d5bf95c74e26bc144d1d8d0`.
+- [ ] A fresh post-fix GitHub Actions run for the current head is still required before final submission sign-off.
 
 ## Required before public submission
 
-- [ ] Verify `09c9268f3f4e0b3e9d5bf95c74e26bc144d1d8d0` with GitHub Actions or a clean checkout using `npm run verify:final`.
+- [ ] Verify the current `main` head with GitHub Actions or a clean checkout using `npm run verify:final`.
 - [ ] If using live CALL-E, configure an authorized test recipient and `CALL_E_MODE=live` explicitly.
 - [ ] Verify the live result manually; do not treat a successful phone connection as successful incident resolution unless the structured outcome passes all gates.
 - [ ] Record the final demo (target: <3 minutes).
@@ -39,10 +39,7 @@ This checklist intentionally distinguishes repository verification from external
 ## Work log
 
 2026-09-14
-- Tightened runtime outcome validation to enforce the closed schema promised by the architecture and JSON contract.
-- Added a regression test proving unexpected outcome fields are rejected.
-- Added `verify:final` so the final recording can use one deterministic verification command.
 - Added bounded cognitive-control primitives for working memory, HDC/holographic indexing, semantic retrieval, counterfactual analysis, MCP capability scoping, temporal decay, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation evaluation.
-- Added regression coverage for the new cognitive modules.
-- First CI validation of the new module passed all 40 tests but failed strict typecheck on one indexed `Uint8Array` access; fixed in `09c9268f3f4e0b3e9d5bf95c74e26bc144d1d8d0`.
+- Added regression coverage for the new cognitive modules; the suite reached 40 passing tests in CI.
+- Strict TypeScript initially rejected one indexed `Uint8Array` access; fixed with an explicit undefined-safe assignment.
 - No autonomous source mutation, production hot-swap, credential access or phone-executor self-modification was introduced.

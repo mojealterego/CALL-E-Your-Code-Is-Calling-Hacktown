@@ -49,14 +49,19 @@ bitemporal episodic memory
 - **Bounded Reflexion layer:** converts policy, execution, validation and uncertain outcomes into explicit retrospective findings and correction guidance; findings are always marked `safeToAutoResolve: false`.
 - **Orchestrator integration:** every non-reused execution stores its Reflexion finding in a bitemporal episodic memory store; terminal idempotent reuse does not create a duplicate finding.
 - **Deterministic Synthetic Red-Team harness:** adversarial cases cover policy rejection, missing evidence, low confidence, malformed outcomes, duplicate operations, budget breaches, contradictory outcomes and replayed events. Every case must preserve escalation safety.
+- **Bounded cognitive modules:** working-memory capacity/TTL, HDC-style holographic associative memory, Shimi-style semantic indexing with temporal decay, counterfactual causal analysis, explicit MCP capability scoping, Pareto-front selection, adaptive load shedding, prompt compression, hard-negative selection, trust degradation and a gated DGM/AlphaEvolve/RSI mutation-evaluation loop.
 - Automated regression tests and GitHub Actions CI.
 - Grant proposal, architecture, security model and judge-ready three-minute demo script.
 
 ## Cognitive control plane
 
-The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants. The orchestrator now persists each non-reused Reflexion finding as an episodic bitemporal record.
+The repository contains a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants.
 
-See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping. CoALA, JEPA, HDC/holographic memory, Graph of Thought, R2/R3 reasoning, AlphaEvolve/DGM mutation loops, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV, ImandraX and an MCP Gateway are explicitly treated as research-track extensions until they have concrete implementations and reproducible evaluation. The project does not claim capabilities that are not present in code.
+`src/cognitive-modules.ts` adds deterministic control-plane primitives inspired by the requested research directions: working memory, HDC/holographic memory, Shimi-style semantic retrieval, temporal decay, counterfactual causal graphs, capability-scoped MCP gateway boundaries, Pareto optimization, load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution loop. Mutation candidates are **data-only proposals**; they cannot execute source changes, access production, or overwrite the running system. Any future self-improvement implementation must remain behind sandbox, red-team, formal-check, benchmark, shadow and explicit approval gates.
+
+The following remain research-track integrations rather than claimed model implementations: CoALA, JEPA, Graph of Thought, R2/R3 reasoning, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS, DeepMind/other proprietary architectures and learned neural weight mutation. The repository deliberately implements the **control interfaces and safety protocol** where useful, without pretending that a deterministic TypeScript prototype is those research systems.
+
+See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping.
 
 ## Quick start
 
@@ -137,6 +142,7 @@ See [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSIO
 │   └── security.md
 ├── src/
 │   ├── bitemporal-memory.ts
+│   ├── cognitive-modules.ts
 │   ├── calle.ts
 │   ├── cli.ts
 │   ├── decision-intelligence.ts
@@ -152,6 +158,7 @@ See [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSIO
 │   └── webhook.ts
 ├── tests/
 │   ├── bitemporal-memory.test.ts
+│   ├── cognitive-modules.test.ts
 │   ├── decision-intelligence.test.ts
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
@@ -191,7 +198,16 @@ The prototype intentionally isolates the remaining enterprise work:
 - TMS/ERP write-back connectors;
 - load, fault-injection and red-team evaluation at scale;
 - durable bitemporal storage and indexed bitemporal graph queries;
-- evaluated reasoning/memory models behind capability-scoped interfaces rather than directly in the phone executor.
+- evaluated learned reasoning/memory models behind capability-scoped interfaces rather than directly in the phone executor.
+
+## Work log
+
+### 2026-09-14
+
+- Added deterministic bounded cognitive-control primitives covering working memory, holographic/HDC-style associative retrieval, Shimi-style semantic indexing, counterfactual analysis, MCP capability scoping, temporal decay, Pareto optimization, load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation evaluation.
+- Added regression coverage for every new control-plane primitive.
+- Mutation/evolution remains sandbox-oriented and proposal-only: no autonomous source overwrite or production self-modification is permitted.
+- README and architecture documentation now distinguish concrete control mechanisms from research-model names that require real model implementations and reproducible evaluation.
 
 ## License
 

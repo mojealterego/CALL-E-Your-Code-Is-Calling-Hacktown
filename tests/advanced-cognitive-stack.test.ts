@@ -9,7 +9,9 @@ import {
   semanticCacheKey, snnEncode, synapticPrune, temporalKnowledgeWeight, trustGate,
   type EvolutionCandidate, mutationLoop, safeSelfCorrection, retrospectiveCorrection,
   OESI, dynamicLoadShedding, vectorMemoryDefragment, digitalSleep, hardNegativeMining,
-  GovernedCognitivePlane, ProceduralMemoryStore,
+  GovernedCognitivePlane, ProceduralMemoryStore, r2Reasoning, r3TitansReasoning,
+  reasoningScore, paretoSelect, chaosScenario, crossSystemHandshake, cognitiveModulation,
+  agentDevel,
 } from "../src/advanced-cognitive-stack.js";
 
 describe("advanced bounded cognitive stack", () => {
@@ -52,6 +54,7 @@ describe("advanced bounded cognitive stack", () => {
     const candidate = alphaEvolve(parent, "bounded-cache", 2, 0.5, { sandbox: true, redTeam: true, formal: true });
     expect(candidate.genotype.architecture).toContain("bounded-cache");
     expect(candidate.redTeamPassed).toBe(true);
+    expect(mutationLoop(parent, ["safe-a", "safe-b"], (c) => ({ ...c, fitness: 2, testsPassed: true, redTeamPassed: true, formalPassed: true })))?.toBeDefined();
   });
 
   it("enforces RSI, self-correction, formal and constitutional gates", () => {
@@ -68,20 +71,31 @@ describe("advanced bounded cognitive stack", () => {
     expect(OESI({ present: true, confidence: "high", contradiction: false })).toBe(true);
   });
 
-  it("covers SNN/JEPA/R2/R3-style bounded reasoning primitives", () => {
+  it("covers SNN/R2/R3-style bounded reasoning primitives", () => {
     expect(snnEncode([0.2, 0.8, 0.7], 0.5).map((x) => x.neuron)).toEqual([1, 2]);
+    expect(r2Reasoning([" route ", "eta", "route"])).toBe("route AND eta");
+    expect(r3TitansReasoning(["a", "b", "c", "d"], 3)).toEqual(["depth-1:a", "depth-2:b", "depth-3:c"]);
+    expect(reasoningScore([0.8, 1])).toBeCloseTo(0.9);
     expect(jepaPredict("route eta", "route eta").error).toBe(0);
     expect(temporalKnowledgeWeight(30)).toBeCloseTo(0.5);
     expect(curriculumDifficulty(0.9, 2)).toBe(3);
   });
 
-  it("provides bounded decision, counterfactual and A/B controls", () => {
+  it("provides decision, counterfactual, A/B, Pareto and resilience controls", () => {
     const a = { id: "a", utility: 1, risk: 0.2, cost: 0.1 };
     const b = { id: "b", utility: 1.5, risk: 0.1, cost: 0.1 };
     expect(abMcts([a, b], 8)?.id).toBe("b");
     expect(counterfactualScore(a, b)).toBeCloseTo(0.6);
     expect(abTest(1, 2, (x) => x).winner).toBe("candidate");
     expect(antiRewardHacking(1, 0.2, 0.1)).toBeCloseTo(0.7);
+    expect(paretoSelect([
+      { latencyMs: 10, costUsd: 1, errorRate: 0.1 },
+      { latencyMs: 20, costUsd: 2, errorRate: 0.2 },
+    ])).toHaveLength(1);
+    expect(chaosScenario(["api", "memory", "phone"], "api")).toEqual(["memory", "phone"]);
+    expect(crossSystemHandshake(["zenoh", "mcp"], "zenoh")).toBe(true);
+    expect(cognitiveModulation({ load: 0.5, trust: 0.8 }, { loadDelta: 0.1 })).toBeDefined();
+    expect(agentDevel({ id: "c", genotype: digitalGenotype(["x"]), fitness: 1, computeCost: 1, testsPassed: true, redTeamPassed: true, formalPassed: true }, true, true).constitutionalSafe).toBe(true);
   });
 
   it("implements offline replay, pruning, alignment, load and cache controls", () => {

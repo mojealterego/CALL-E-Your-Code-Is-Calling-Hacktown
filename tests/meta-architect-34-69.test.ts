@@ -15,7 +15,7 @@ describe("governed meta-architect capabilities 34-69", () => {
     const proposal: EvolutionProposal = { id: "g2-cache", parentVersion: "g1", mutation: "cache", generation: 2, expectedGain: 4, computeCost: 1, riskPenalty: 0.5 };
     expect(evolutionFitness(4, 1, 0.5)).toBe(2.5);
     expect(evaluateEvolution(proposal, { sandbox: true, redTeam: true, formal: true, benchmark: true, shadow: true, approval: true }).accepted).toBe(true);
-    expect(evaluateEvolution(proposal, { sandbox: true, redTeam: true, formal: false, benchmark: true, shadow: true, approval: true }).status ?? "").toBeDefined();
+    expect(evaluateEvolution(proposal, { sandbox: true, redTeam: true, formal: false, benchmark: true, shadow: true, approval: true }).accepted).toBe(false);
     const state: RecursiveState = { version: "g1", capabilities: ["read"], rateLimits: { api: 10 }, errorRate: 0, latencyMs: 20, tools: ["mcp"], snapshotAt: "2026-09-14T00:00:00Z" };
     expect(governedRSI({ state, proposal, gates: { sandbox: true, redTeam: true, formal: true, benchmark: true, shadow: true, approval: true } }).status).toBe("release");
     expect(governedRSI({ state, proposal, gates: { sandbox: true } }).status).toBe("rollback");

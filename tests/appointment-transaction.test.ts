@@ -63,6 +63,21 @@ describe("appointment transaction reconciliation", () => {
     expect(result.decision).toBe("commit");
   });
 
+  it("blocks a non-first-visit result that falsely reports first-visit instructions", () => {
+    const result = reconcileAppointmentTransaction(tx, {
+      ...base,
+      appointmentConfirmed: "yes",
+      appointmentDecision: "confirm",
+      firstVisit: "no",
+      identityDocumentReminderGiven: true,
+      arrive30MinutesEarly: false,
+      registrationReminderGiven: false,
+      informationFormReminderGiven: false,
+    });
+    expect(result.decision).toBe("abort");
+    expect(result.reasons).toContain("first-visit instructions were reported for a non-first visit");
+  });
+
   it("commits a reschedule only to a prepared available slot", () => {
     const result = reconcileAppointmentTransaction(tx, {
       ...base,

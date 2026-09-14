@@ -82,8 +82,8 @@ export async function recoverIncident(
   const appointment = incident.appointment;
   const isAppointment = appointment !== undefined;
   const transaction = isAppointment
-    ? prepareAppointmentTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: appointment })
-    : prepareTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, route: incident.proposedRoute, maxEta: incident.maxEta });
+    ? prepareAppointmentTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}-${incident.vehicleId}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: appointment })
+    : prepareTransaction({ transactionId: current.transactionId ?? `TX-${incident.id}-${incident.vehicleId}`, incidentId: incident.id, participantId: incident.vehicleId, route: incident.proposedRoute, maxEta: incident.maxEta });
 
   const authoritative = await fetchAuthoritativeCall(current.callId, apiKey, isAppointment);
   ledger.transition(operationKey, "verifying", { outcome: authoritative.outcome, callId: authoritative.id, transactionId: transaction.transactionId });
@@ -92,6 +92,7 @@ export async function recoverIncident(
     route: authoritative.outcome.route,
     eta: authoritative.outcome.eta_update_time,
     acceptance: authoritative.outcome.route_acceptance,
+    escalationNeeded: authoritative.outcome.escalation_needed,
     confidence: authoritative.outcome.confidence,
     evidenceSummary: authoritative.outcome.evidence_summary,
     providerStatus: authoritative.status,

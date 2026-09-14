@@ -2,8 +2,8 @@
 
 ## Verified in repository
 
-- [x] TypeScript project builds after the cognitive-module indexed-access fix; the fix is included in current `main`.
-- [x] Automated test suite reached 12 test files / 40 tests in the first CI validation of the cognitive modules.
+- [x] Cognitive control module is present and strict TypeScript indexed-access handling is fixed.
+- [x] First CI validation of the cognitive modules passed all 12 test files / 40 tests before typecheck exposed the indexed-access issue.
 - [x] Default `npm run demo` path is deterministic dry-run with no provider/phone call.
 - [x] Policy gate is authoritative for execution.
 - [x] Structured outcome validation is enforced, including runtime rejection of unexpected fields.
@@ -17,7 +17,6 @@
 - [x] Reusable community-contribution package is present under `docs/community-contribution/voice-transaction-coordinator/`.
 - [x] Community skill has YAML frontmatter, provider-neutral control rules and separate provider/transaction references.
 - [x] One-command final verification is available as `npm run verify:final`.
-- [x] Bounded cognitive control primitives are implemented in `src/cognitive-modules.ts` with regression coverage.
 - [x] Live CALL-E workflow explicitly authorizes one test call and checks out current `main`.
 
 ## Required before public submission
@@ -43,4 +42,4 @@ This checklist intentionally distinguishes repository verification from external
 - Added regression coverage for the new cognitive modules.
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
-- No autonomous source mutation, production hot-swap, credential access or phone-executor self-modification was introduced.
+- Kept DGM/AlphaEvolve/RSI mutation proposal-only: no autonomous source mutation, production hot-swap, credential access or phone-executor self-modification.

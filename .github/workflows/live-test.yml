@@ -2,12 +2,18 @@ name: Controlled live CALL-E test
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_live:
+        description: "Type I_AUTHORIZE_ONE_CALL to authorize exactly one live appointment call"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   live-test:
+    if: inputs.confirm_live == 'I_AUTHORIZE_ONE_CALL'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

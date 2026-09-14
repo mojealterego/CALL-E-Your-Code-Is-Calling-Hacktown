@@ -40,8 +40,15 @@ audit ledger
 - Human escalation on policy rejection, execution errors, insufficient evidence, low confidence or explicit escalation.
 - Replay-aware webhook contract and event-ID deduplication.
 - Hash-linked audit records for tamper-evident sequencing inside the prototype ledger.
+- **Bitemporal decision memory:** valid-time and recording-time are separated, enabling deterministic point-in-time reconstruction for incident replay and retrospective analysis.
 - Automated regression tests and GitHub Actions CI.
 - Grant proposal, architecture, security model and judge-ready three-minute demo script.
+
+## Cognitive control plane
+
+The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. The existing policy, schema and evidence gates form the adversarial decision boundary; uncertain outcomes remain escalations.
+
+See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping. CoALA, JEPA, HDC/holographic memory, Graph of Thought, R2/R3 reasoning, AlphaEvolve/DGM mutation loops, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV, ImandraX and an MCP Gateway are explicitly treated as research-track extensions until they have concrete implementations and reproducible evaluation. The project does not claim capabilities that are not present in code.
 
 ## Quick start
 
@@ -96,10 +103,12 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 ├── .github/workflows/ci.yml
 ├── docs/
 │   ├── architecture.md
+│   ├── cognitive-control-plane.md
 │   ├── demo-script.md
 │   ├── grant-proposal.md
 │   └── security.md
 ├── src/
+│   ├── bitemporal-memory.ts
 │   ├── calle.ts
 │   ├── cli.ts
 │   ├── domain.ts
@@ -111,6 +120,7 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   ├── validation.ts
 │   └── webhook.ts
 ├── tests/
+│   ├── bitemporal-memory.test.ts
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
 │   ├── policy.test.ts
@@ -144,7 +154,9 @@ The prototype intentionally isolates the remaining enterprise work:
 - retention/deletion policies and jurisdiction-specific privacy controls;
 - operator console and global kill switch;
 - TMS/ERP write-back connectors;
-- load, fault-injection and red-team evaluation.
+- load, fault-injection and red-team evaluation;
+- durable bitemporal storage and indexed bitemporal graph queries;
+- evaluated reasoning/memory models behind capability-scoped interfaces rather than directly in the phone executor.
 
 ## License
 

@@ -30,6 +30,17 @@ This matrix records the requested concepts and their bounded implementation stat
 | 86 NARS | `narsRank()` frequency × confidence belief ranking |
 | 87 CEV | `cevGate()` explicit constitutional predicates |
 | 88 Temporal Inversion Routing | `temporalInversionCorrection()` historical causal-parent correction record; history is immutable |
+| 89 Synthetic Category Theory | `buildCategory()` objects/morphisms and `mapByFunctor()` structure-preserving domain mapping |
+| 90 Multi-Valued / Hyperbaric Logic | `hyperbaricLogicRank()` true/false/unknown/perspectival epistemic states |
+| 91 Epistemic Defragmentation | `epistemicDefragmentation()` contradiction detection, isolation and conservative unknown state |
+| 92 Recursive Swarm Self-Replication | `spawnDgmInstances()` bounded sandbox branches and `mergeValidatedInstances()` validation-gated merge |
+| 93 Hardware/Software Transpilation | `transpileIntent()` assembly/Verilog/VHDL/neuromorphic-IR/QASM non-executable artifacts |
+| 94 Formal Verification as Constraint | `verifyMutation()` formal predicates + adversarial gate required for approval |
+| 95 Physical Substrate Optimization | `optimizeSubstrate()` latency/energy/thermal profile selection |
+| 96 Quantum-Classical Hybrid Coherence | `hybridQuantumPlan()` explicit classical/quantum backend boundary |
+| 97 Energy-Aware Compute | `energyAwareGate()` power and thermal fail-closed policy |
+| 98 Provable Alignment | `provableAlignment()` constitutional predicates plus baseline/candidate integrity hashes |
+| 99 Epistemic Humility / Fallibilism | `epistemicHumility()` confidence threshold, compute reserve and rollback readiness |
 
 ## RSI safety boundary
 
@@ -37,4 +48,4 @@ The system may generate and benchmark candidates, but no research module may aut
 
 `OBSERVE → PROFILE → HYPOTHESIS → GENERATE → AIR-GAPPED SANDBOX → RED TEAM → FORMAL GATE → BENCHMARK → SHADOW → HUMAN/POLICY APPROVAL → ATOMIC RELEASE → ROLLBACK`
 
-Quantum, FPGA, ZK, TDA, active-inference and hardware paths are bounded integration contracts until a separately authorized implementation is supplied and verified.
+Capabilities 92–98 are deliberately bounded: swarm branches are sandbox records, transpilation emits non-executable artifacts, quantum execution is an explicit backend boundary, substrate optimization is profile selection, and alignment is a gate rather than an autonomous objective rewrite. Capability 91 isolates contradictory beliefs instead of erasing evidence; capability 99 keeps low-confidence decisions reversible.

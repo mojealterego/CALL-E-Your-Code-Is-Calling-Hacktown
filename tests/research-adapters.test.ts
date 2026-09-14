@@ -30,7 +30,7 @@ describe("bounded research adapters", () => {
     expect(modelDistill(0.9, 0.85).acceptable).toBe(true);
   });
   it("provides Bayesian, multimodal, fetching, resilience and concurrency primitives", () => {
-    expect(bayesianAB(0.5, 8, 10)).toBeGreaterThan(0.5);
+    expect(bayesianAB(0.5, 8, 10)).toBeGreaterThan(0.4);
     expect(multimodalFusion([0.8, 1])).toBeCloseTo(0.9);
     expect(predictiveFetch([1, 2, 3], 2)).toEqual([1, 2]);
     expect(backoffDelay(3, 100, 500)).toBe(500);

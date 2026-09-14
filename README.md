@@ -49,19 +49,17 @@ bitemporal episodic memory
 - **Bounded Reflexion layer:** converts policy, execution, validation and uncertain outcomes into explicit retrospective findings and correction guidance; findings are always marked `safeToAutoResolve: false`.
 - **Orchestrator integration:** every non-reused execution stores its Reflexion finding in a bitemporal episodic memory store; terminal idempotent reuse does not create a duplicate finding.
 - **Deterministic Synthetic Red-Team harness:** adversarial cases cover policy rejection, missing evidence, low confidence, malformed outcomes, duplicate operations, budget breaches, contradictory outcomes and replayed events. Every case must preserve escalation safety.
-- **Bounded cognitive modules:** working-memory capacity/TTL, HDC-style holographic associative memory, Shimi-style semantic indexing with temporal decay, counterfactual causal analysis, explicit MCP capability scoping, Pareto-front selection, adaptive load shedding, prompt compression, hard-negative selection, trust degradation and a gated DGM/AlphaEvolve/RSI mutation-evaluation loop.
+- **Bounded cognitive control layer:** working memory, HDC/holographic associative indexing, Shimi-style semantic retrieval with temporal decay, counterfactual causal analysis, capability-scoped MCP gateway boundary, Pareto selection, adaptive load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution evaluation protocol.
 - Automated regression tests and GitHub Actions CI.
 - Grant proposal, architecture, security model and judge-ready three-minute demo script.
 
 ## Cognitive control plane
 
-The repository contains a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants.
+`BitemporalMemoryStore`, `assessDecision()`, `reflectOnExecution()` and `runSyntheticRedTeam()` form the original governed control plane. `src/cognitive-modules.ts` adds deterministic, bounded implementations for the additional requested control patterns without claiming to reproduce proprietary or learned research systems.
 
-`src/cognitive-modules.ts` adds deterministic control-plane primitives inspired by the requested research directions: working memory, HDC/holographic memory, Shimi-style semantic retrieval, temporal decay, counterfactual causal graphs, capability-scoped MCP gateway boundaries, Pareto optimization, load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution loop. Mutation candidates are **data-only proposals**; they cannot execute source changes, access production, or overwrite the running system. Any future self-improvement implementation must remain behind sandbox, red-team, formal-check, benchmark, shadow and explicit approval gates.
+The mutation/evolution layer is intentionally **proposal-only**: candidates are data records and must pass sandbox, adversarial, formal/property, benchmark and shadow gates before any hypothetical release. This prototype never self-overwrites source code, secrets, policy, audit history or the phone executor.
 
-The following remain research-track integrations rather than claimed model implementations: CoALA, JEPA, Graph of Thought, R2/R3 reasoning, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS, DeepMind/other proprietary architectures and learned neural weight mutation. The repository deliberately implements the **control interfaces and safety protocol** where useful, without pretending that a deterministic TypeScript prototype is those research systems.
-
-See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping.
+See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the full bilingual mapping. CoALA, JEPA, Graph of Thought, R2/R3, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS and proprietary DeepMind architectures remain research tracks requiring actual model implementations and reproducible evaluation.
 
 ## Quick start
 
@@ -126,6 +124,7 @@ See [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSIO
 ```text
 .
 ├── .github/workflows/ci.yml
+├── .github/workflows/live-call.yml
 ├── docs/
 │   ├── architecture.md
 │   ├── cognitive-control-plane.md
@@ -204,10 +203,11 @@ The prototype intentionally isolates the remaining enterprise work:
 
 ### 2026-09-14
 
-- Added deterministic bounded cognitive-control primitives covering working memory, holographic/HDC-style associative retrieval, Shimi-style semantic indexing, counterfactual analysis, MCP capability scoping, temporal decay, Pareto optimization, load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation evaluation.
-- Added regression coverage for every new control-plane primitive.
-- Mutation/evolution remains sandbox-oriented and proposal-only: no autonomous source overwrite or production self-modification is permitted.
-- README and architecture documentation now distinguish concrete control mechanisms from research-model names that require real model implementations and reproducible evaluation.
+- Added bounded cognitive-control primitives requested for the architecture and persisted the work in `README.md` and `docs/cognitive-control-plane.md`.
+- Added regression coverage for the new control layer.
+- Fixed strict TypeScript indexed-access validation exposed by CI.
+- Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
+- Kept DGM/AlphaEvolve/RSI mutation proposal-only: no autonomous source mutation, production hot-swap, credential access or phone-executor self-modification.
 
 ## License
 

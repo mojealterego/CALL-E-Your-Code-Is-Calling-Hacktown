@@ -31,4 +31,15 @@ describe("outcome validation", () => {
       confidence: "high",
     })).toThrow();
   });
+
+  it("rejects unexpected fields", () => {
+    expect(() => validateOutcome({
+      route_acceptance: "yes",
+      eta_update_time: "16:40",
+      escalation_needed: "none",
+      evidence_summary: "Driver confirmed.",
+      confidence: "high",
+      hidden_override: true,
+    })).toThrow(/Unexpected outcome field/);
+  });
 });

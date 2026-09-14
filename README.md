@@ -36,8 +36,6 @@ The mutation/evolution protocol is proposal-only: sandbox → red-team → forma
 
 CoALA, JEPA, Graph of Thought, R2/R3 reasoning, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS and proprietary DeepMind architectures remain research tracks requiring actual model implementations and reproducible evaluation.
 
-See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md).
-
 ## Quick start
 
 ```bash

@@ -108,6 +108,14 @@ See [`docs/evaluation.md`](docs/evaluation.md) for the deterministic validation 
 
 See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is under three minutes and demonstrates the safety gate, structured outcome contract, idempotency behavior and impact thesis.
 
+## Community contribution package
+
+A provider-neutral reusable Agent Skill is prepared at `docs/community-contribution/voice-transaction-coordinator/`. It contains `SKILL.md` plus provider-boundary and transaction-example references. The package is designed for the `CALLE-AI/awesome-phone-call-agents` contribution and deliberately does not claim that an upstream PR has already been opened.
+
+## Submission finalization
+
+See [`docs/hackathon-checklist.md`](docs/hackathon-checklist.md) and [`SUBMISSION.md`](SUBMISSION.md). Repository verification is kept separate from external submission actions such as recording/publication, Devpost entry and the required upstream contribution PR.
+
 ## Repository layout
 
 ```text
@@ -116,9 +124,16 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 ├── docs/
 │   ├── architecture.md
 │   ├── cognitive-control-plane.md
+│   ├── community-contribution/
+│   │   └── voice-transaction-coordinator/
+│   │       ├── SKILL.md
+│   │       └── references/
+│   │           ├── provider-boundary.md
+│   │           └── transaction-example.md
 │   ├── demo-script.md
 │   ├── evaluation.md
 │   ├── grant-proposal.md
+│   ├── hackathon-checklist.md
 │   └── security.md
 ├── src/
 │   ├── bitemporal-memory.ts
@@ -146,9 +161,11 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   └── validation.test.ts
 ├── .env.example
 ├── .gitignore
+├── SUBMISSION.md
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
+```
 
 ## CALL-E integration note
 

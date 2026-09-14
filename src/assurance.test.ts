@@ -8,10 +8,10 @@ import {
   formalGate,
   reconcileStaleState,
   scoreMonitorability,
-  semanticRag,
   evaluateTrajectory,
   createClaim,
 } from "./assurance.js";
+import { rebuildLedgerAfterVerification, verifyClaim } from "./claim-ledger.js";
 
 describe("cognitive assurance fabric", () => {
   it("retrieves semantic procedural memory deterministically", () => {
@@ -66,22 +66,31 @@ describe("cognitive assurance fabric", () => {
     expect(claim.status).toBe("unverified");
   });
 
-  it("permits a verified claim to participate in the ledger without collapsing provenance", () => {
+  it("promotes a claim only through an explicit authoritative verification", () => {
     const claim = createClaim({
       subject: "Adam Miauczyński",
-      predicate: "patient.confirmed",
+      predicate: "appointment.confirmed",
       value: "yes",
-      status: "verified",
-      source: "authoritative",
-      authority: "authoritative",
-      evidenceRefs: ["authoritative:patient-record"],
+      status: "unverified",
+      source: "call-e",
+      authority: "conversational",
+      evidenceRefs: ["call_id:demo", "conversation_turn:12", "structured_result"],
       confidence: 1,
       validFrom: "2026-09-14T00:00:00.000Z",
-      provenance: ["call-e", "authoritative:patient-record"],
+      provenance: ["call-e", "structured_result"],
     });
-    const ledger = buildClaimLedger([claim]);
-    expect(ledger.verified).toHaveLength(1);
-    expect(ledger.verified[0]?.authority).toBe("authoritative");
+    const verified = verifyClaim(claim, { source: "authoritative", value: "yes", evidenceRefs: ["calendar-readback:v3"], fresh: true });
+    expect(verified.decision.verified).toBe(true);
+    expect(verified.claim.status).toBe("verified");
+    expect(verified.claim.authority).toBe("authoritative");
+    expect(verified.claim.provenance).toContain("calendar-readback:v3");
+
+    const conflict = verifyClaim(claim, { source: "authoritative", value: "no", evidenceRefs: ["calendar-readback:v4"], fresh: true });
+    expect(conflict.decision.status).toBe("contradicted");
+    expect(conflict.claim.status).toBe("contradicted");
+
+    const rebuilt = rebuildLedgerAfterVerification([verified.claim]);
+    expect(rebuilt.commitAllowed).toBe(false);
   });
 
   it("treats monitorability as a safety variable", () => {

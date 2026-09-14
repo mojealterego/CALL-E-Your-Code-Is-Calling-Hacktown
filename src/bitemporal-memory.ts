@@ -18,7 +18,7 @@ export interface BitemporalMemory<T> {
 export class BitemporalMemoryStore<T> {
   private readonly entries = new Map<string, BitemporalMemory<T>>();
 
-  put(entry: BitemporalMemory<T>): void {
+  put(entry: BitemporalMemory<T>): BitemporalMemory<T> {
     if (this.entries.has(entry.id)) {
       throw new Error(`Memory entry already exists: ${entry.id}`);
     }
@@ -34,6 +34,7 @@ export class BitemporalMemoryStore<T> {
       }
     }
     this.entries.set(entry.id, entry);
+    return entry;
   }
 
   /** Facts that were valid at a business-world point in time. */

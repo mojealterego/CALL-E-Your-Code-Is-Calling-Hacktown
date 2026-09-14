@@ -57,10 +57,8 @@ describe("voice transaction reconciliation", () => {
   });
 
   it("recovers when the call matches but provider evidence is absent", () => {
-    const result = reconcileTransaction(tx, {
-      ...validEvidence,
-      evidenceItems: undefined,
-    });
+    const { evidenceItems: _, ...withoutEvidence } = validEvidence;
+    const result = reconcileTransaction(tx, withoutEvidence);
     expect(result.decision).toBe("recover");
     expect(result.reasons).toContain("CALL-E terminal evidence is missing");
   });

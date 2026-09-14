@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   CEV, CoALAMemoryController, DigitalNexusCore, GMemory, GraphOfThought, RAG2,
-  SEGPA, abMcts, abTest, adversarialGate, agentDevel, alphaEvolve, antiRewardHacking,
-  constitutionalEvaluate, counterfactualScore, curriculumDifficulty, digitalGenotype,
-  godelGuard, hdcEncode, hdcSimilarity, imandraXGuard, jepaPredict, modalitySwitch,
-  mutateGenotype, nextEvolutionStage, offlineReplay, promptPrune, resourceDonate,
-  schemaAlign, selectEvolution, semanticCacheKey, shedLoad, snnEncode, synapticPrune,
+  SEGPA, abMcts, abTest, adversarialGate, alphaEvolve, antiRewardHacking,
+  advanceRSI, constitutionalEvaluate, counterfactualScore, curriculumDifficulty,
+  digitalGenotype, godelGuard, hdcEncode, hdcSimilarity, imandraXGuard, jepaPredict,
+  modalitySwitch, mutateGenotype, offlineReplay, promptPrune, resourceDonate,
+  schemaAlign, selectEvolution, semanticCacheKey, snnEncode, synapticPrune,
   temporalKnowledgeWeight, trustGate, type EvolutionCandidate,
 } from "../src/advanced-cognitive-stack.js";
 
@@ -44,14 +44,15 @@ describe("advanced bounded cognitive stack", () => {
   });
 
   it("enforces the RSI pipeline and formal/constitutional gates", () => {
-    expect(nextEvolutionStage("sandbox")).toBe("red-team");
+    expect(advanceRSI({ stage: "sandbox", version: "1", changeId: "x", approved: false }, { sandbox: true })).toMatchObject({ stage: "red-team" });
+    expect(advanceRSI({ stage: "sandbox", version: "1", changeId: "x", approved: false }, { sandbox: false })).toMatchObject({ stage: "rollback" });
     expect(godelGuard({ ok: true }, [{ id: "ok", check: (x) => (x as { ok: boolean }).ok }])).toBe(true);
     expect(imandraXGuard({}, [{ id: "never", check: () => false }])).toBe(false);
     expect(SEGPA({}, [{ id: "never", check: () => false }])).toBe(false);
     const rules = [{ id: "safe", predicate: (x: unknown) => x === "safe" }];
     expect(constitutionalEvaluate("safe", rules).allowed).toBe(true);
     expect(CEV("bad", rules)).toBe(false);
-    expect(adversarialGate("x", [(x) => x === "attack"])) .toBe(true);
+    expect(adversarialGate("x", [(x) => x === "attack"])).toBe(true);
   });
 
   it("covers SNN/JEPA-style predictive and temporal primitives", () => {

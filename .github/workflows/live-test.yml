@@ -31,4 +31,5 @@ jobs:
           AEGIS_LIVE_PHONE: ${{ secrets.AEGIS_LIVE_PHONE }}
           CALLE_REGION: ${{ secrets.CALLE_REGION }}
           CALLE_LOCALE: pl-PL
+          AEGIS_LIVE_TEST_ID: ${{ github.run_id }}
         run: npm run live

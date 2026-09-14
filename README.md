@@ -12,6 +12,14 @@ The repository implements a bounded control plane around phone execution: policy
 
 `src/research-adapters.ts` adds bounded interfaces for latent-space messaging, cross-examination, firewalling, bounded infinite-horizon planning, controlled noise, legacy bridging, pre-trained knowledge retention, offline fallback, few-shot tool plans, meta-architecture candidates, zero-shot domain adaptation, MAML-style adaptation metrics, model distillation, Bayesian A/B, adaptive trust, multimodal fusion, predictive fetch, backoff/jitter primitives, latency budgets, asynchronous concurrency, fuzzy clarification, DAG planning, HNSW-style candidate selection and zero-trust authorization.
 
+### Meta-Architect capabilities 34–69
+
+`src/meta-architect-34-69.ts` is the dedicated governed implementation layer for the requested evolution, causal, memory-consolidation, meta-learning, homeostasis, recursive-state, semantic-cache, latent-message, cross-examination, constitutional-refusal, temporal-decay, resource-sharing, compression, multimodal, load-shedding, domain-adaptation, handshake, chaos, Pareto, bounded-horizon, noise, legacy, retention, offline-fallback, curriculum, defragmentation, schema-alignment, modality-switching, Bayesian A/B, trust, few-shot-tool-plan and meta-architecture capabilities.
+
+`governedRSI()` enforces `sandbox → redTeam → formal → benchmark → shadow → approval` and returns `release` only when every gate passes and net fitness is positive. Otherwise it returns `rollback`. Candidate/tool/architecture generation is non-executable and approval-bound.
+
+Full mapping: `docs/meta-architect-34-69.md`. Dedicated regression suite: `tests/meta-architect-34-69.test.ts`.
+
 ### Rust SNN + Zenoh fast path
 
 `rust/snn-zenoh/` adds an actual Rust leaky-integrate-and-fire spiking-neural-network fast path. Each inference frame emits explicit spike events and carries an enforced **1 ms target budget** with measured elapsed time. Optional feature `zenoh-transport` adds Zenoh 1.x publication of serialized SNN frames. The budget is a gate/target, not a claim that arbitrary hardware or networks will always deliver sub-millisecond end-to-end latency.
@@ -43,6 +51,7 @@ The manual `LIVE CALL-E Test` workflow requires explicit authorization, validate
 ```bash
 npm install
 npm run verify:final
+npm run verify:meta
 ```
 
 Rust fast-path verification:
@@ -64,6 +73,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 - Implemented and tested bounded cognitive-control primitives requested for the architecture.
 - Added the advanced cognitive stack and capability matrix covering CoALA, G-memory, HDC/holographic memory, Shimi index, MCP/GCP boundaries, AlphaEvolve/DGM/genotype/mutation/RSI, R2/R3 reasoning, SNN, JEPA-style prediction, GoT, adversarial/constitutional/formal gates, RAG 2.0, AB-MCTS, offline replay/digital sleep, retrospective correction and point-in-time recovery.
 - Added bounded research adapters for the remaining meta-architecture skills, including negotiation/data-driven decision contracts, resilience, adaptive routing, zero-trust boundaries and non-executable tool/architecture generation.
+- Added the dedicated governed Meta-Architect 34–69 layer and regression suite, including a six-gate RSI release protocol with mandatory rollback on failed evidence.
 - Added a Rust LIF SNN fast path with explicit 1 ms budget accounting and optional Zenoh 1.x transport.
 - Added bounded ImandraX-style proof-request/invariant gating and a one-cycle MARS metacognitive reflection controller.
 - Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.

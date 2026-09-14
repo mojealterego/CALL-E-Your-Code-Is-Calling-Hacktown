@@ -12,8 +12,9 @@
 - [x] Default `npm run demo` remains deterministic dry-run with no provider/phone call.
 - [x] Live CALL-E workflow explicitly authorizes one test call and checks out current `main`.
 - [x] Research-track concepts are separated from claims of actual learned/proprietary model implementations.
-- [x] Final `main` head CI is green: TypeScript/Vitest verification and Rust SNN/Zenoh workflow both passed.
 - [x] Transcendence 89–99 regression suite is present and included in the full test suite.
+- [x] Real-World Assurance Fabric is implemented and integrated: Claim Ledger, Evidence Graph, Monitorability Score, trajectory security, post-call compound reasoning, epistemic statuses, stale-state protection, Side-Effect Conservation Invariant and Conversation Contract.
+- [x] Current `main` head `9fbde3a8382ad86081e435dbba756faba97485f8` passed GitHub Actions CI: 20 test files / 95 tests and strict TypeScript typecheck.
 - [x] README capability ranges and verification commands are synchronized with the implementation.
 
 ## Required before public submission
@@ -40,6 +41,7 @@ External submission actions are not marked complete merely because repository pr
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
 - Added and verified the Transcendence 89–99 bounded contracts and regression suite.
+- Added the Real-World Assurance Fabric and integrated its post-call evidence/monitorability/trajectory bundle into the orchestrator without bypassing existing policy and idempotency authority.
 - Re-synchronized README capability ranges after documentation drift.
-- Verified final `main` head with green GitHub Actions CI and Rust SNN/Zenoh checks.
+- Verified the assurance-integrated `main` head with green GitHub Actions CI: 20 test files / 95 tests plus strict TypeScript typecheck.
 - Kept DGM/AlphaEvolve/RSI mutation proposal-only: no autonomous source mutation, production hot-swap, credential access or phone-executor self-modification.

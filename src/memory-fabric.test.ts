@@ -8,12 +8,14 @@ import {
   retrieveWholeMemory,
   semanticRetrieve,
   temporalRetrieve,
+  workingRetrieve,
 } from "./memory-fabric.js";
 
 const now = "2026-09-14T10:00:00.000Z";
 
 function fabric() {
   const value = emptyMemoryFabric();
+  value.working.push({ id: "work-1", kind: "working", text: "Adam appointment confirmation in progress", tags: ["Adam", "appointment"], recordedAt: now, validFrom: now });
   value.semantic.push({ id: "sem-1", kind: "semantic", text: "first visit registration policy", tags: ["first visit", "registration"], recordedAt: now, validFrom: now });
   value.episodic.push({ id: "ep-1", kind: "episodic", text: "Adam previous appointment", tags: ["Adam", "appointment"], recordedAt: now, validFrom: now });
   value.procedural.push({ id: "proc-1", kind: "procedural", text: "confirm appointment before closing", tags: ["appointment", "confirm"], recordedAt: now, validFrom: now });
@@ -34,16 +36,22 @@ describe("seven-dimensional memory fabric", () => {
     expect(temporalRetrieve("2026-09-14T10:00:00.000Z", value)[0]?.id).toBe("bt-1");
   });
 
+  it("retrieves working memory as a first-class dimension", () => {
+    const value = fabric();
+    expect(workingRetrieve("Adam appointment", value)[0]?.id).toBe("work-1");
+  });
+
   it("uses graph links to expand associative retrieval", () => {
     const value = fabric();
     expect(graphRetrieve("Adam previous appointment", value).map((item) => item.id)).toEqual(expect.arrayContaining(["ep-1", "holo-1"]));
     expect(holographicRetrieve("Adam receptionist", value)[0]?.id).toBe("holo-1");
   });
 
-  it("assembles whole-memory context without turning retrieval into authority", () => {
+  it("assembles whole-memory context across the seven dimensions without turning retrieval into authority", () => {
     const value = fabric();
     const retrieved = retrieveWholeMemory("Adam appointment first visit", value);
-    expect(retrieved.length).toBeGreaterThan(0);
+    const ids = retrieved.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining(["work-1", "sem-1", "ep-1", "proc-1", "holo-1", "bt-1"]));
     const provenance = provenanceForBitemporalMemory(value.bitemporal[0]!, now);
     expect(provenance.verified).toBe(true);
     expect(memoryCanAuthorizeExecution(provenance)).toBe(false);

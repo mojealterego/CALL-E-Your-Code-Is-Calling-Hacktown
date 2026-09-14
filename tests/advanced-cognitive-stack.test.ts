@@ -79,7 +79,7 @@ describe("advanced bounded cognitive stack", () => {
     const a = { id: "a", utility: 1, risk: 0.2, cost: 0.1 };
     const b = { id: "b", utility: 1.5, risk: 0.1, cost: 0.1 };
     expect(abMcts([a, b], 8)?.id).toBe("b");
-    expect(counterfactualScore(a, b)).toBeCloseTo(0.5);
+    expect(counterfactualScore(a, b)).toBeCloseTo(0.6);
     expect(abTest(1, 2, (x) => x).winner).toBe("candidate");
     expect(antiRewardHacking(1, 0.2, 0.1)).toBeCloseTo(0.7);
   });

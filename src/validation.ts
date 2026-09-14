@@ -26,6 +26,17 @@ function validateAppointmentDecision(value: unknown): AppointmentDecision {
   return value as AppointmentDecision;
 }
 
+function validateEvidence(value: unknown): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item.trim().length === 0)) throw new Error("Invalid evidence");
+  return value as string[];
+}
+
+function validateBooleanField(value: unknown, key: string): boolean {
+  if (typeof value !== "boolean") throw new Error(`Invalid ${key}`);
+  return value;
+}
+
 export function validateOutcome(value: unknown): CallOutcome {
   if (!value || typeof value !== "object") throw new Error("CALL-E result must be an object");
   const v = value as Record<string, unknown>;
@@ -36,18 +47,13 @@ export function validateOutcome(value: unknown): CallOutcome {
     const firstVisit = validateAppointmentField(v.first_visit, "first_visit");
     if (typeof v.doctor_confirmed !== "string") throw new Error("Invalid doctor_confirmed");
     const doctorConfirmed = v.doctor_confirmed;
-    const booleanField = (key: string): boolean => {
-      const field = v[key];
-      if (typeof field !== "boolean") throw new Error(`Invalid ${key}`);
-      return field;
-    };
-    const identityDocumentReminderGiven = booleanField("identity_document_reminder_given");
-    const arrive30MinutesEarly = booleanField("arrive_30_minutes_early");
-    const registrationReminderGiven = booleanField("registration_reminder_given");
-    const informationFormReminderGiven = booleanField("information_form_reminder_given");
-    const conversationCompleted = booleanField("conversation_completed");
-    const rescheduleRequested = booleanField("reschedule_requested");
-    const rescheduleCompleted = booleanField("reschedule_completed");
+    const identityDocumentReminderGiven = validateBooleanField(v.identity_document_reminder_given, "identity_document_reminder_given");
+    const arrive30MinutesEarly = validateBooleanField(v.arrive_30_minutes_early, "arrive_30_minutes_early");
+    const registrationReminderGiven = validateBooleanField(v.registration_reminder_given, "registration_reminder_given");
+    const informationFormReminderGiven = validateBooleanField(v.information_form_reminder_given, "information_form_reminder_given");
+    const conversationCompleted = validateBooleanField(v.conversation_completed, "conversation_completed");
+    const rescheduleRequested = validateBooleanField(v.reschedule_requested, "reschedule_requested");
+    const rescheduleCompleted = validateBooleanField(v.reschedule_completed, "reschedule_completed");
     const appointmentDecision = validateAppointmentDecision(v.appointment_decision);
     if (typeof v.new_appointment_date !== "string" || typeof v.new_appointment_time !== "string") throw new Error("Invalid rescheduled appointment");
     const newAppointmentDate = v.new_appointment_date;
@@ -56,6 +62,8 @@ export function validateOutcome(value: unknown): CallOutcome {
     const evidenceSummary = v.evidence_summary;
     if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
     const confidence = v.confidence as CallOutcome["confidence"];
+    const evidence = validateEvidence(v.evidence);
+    const taskCompleted = v.task_completed === undefined ? undefined : validateBooleanField(v.task_completed, "task_completed");
     const completionConfidence = validateCompletionConfidence(v.completion_confidence);
     return {
       route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "none",
@@ -74,8 +82,8 @@ export function validateOutcome(value: unknown): CallOutcome {
       reschedule_completed: rescheduleCompleted,
       new_appointment_date: newAppointmentDate,
       new_appointment_time: newAppointmentTime,
-      ...(Array.isArray(v.evidence) ? { evidence: v.evidence.filter((item): item is string => typeof item === "string") } : {}),
-      ...(v.task_completed !== undefined ? { task_completed: v.task_completed as boolean } : {}),
+      ...(evidence !== undefined ? { evidence } : {}),
+      ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
       ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
       ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}),
       ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
@@ -88,15 +96,16 @@ export function validateOutcome(value: unknown): CallOutcome {
   if (!CONFIDENCE.has(String(v.confidence))) throw new Error("Invalid confidence");
   if (typeof v.eta_update_time !== "string") throw new Error("Invalid eta_update_time");
   if (typeof v.evidence_summary !== "string" || v.evidence_summary.trim().length === 0) throw new Error("Evidence is required");
-  if (v.evidence !== undefined && (!Array.isArray(v.evidence) || v.evidence.some((item) => typeof item !== "string"))) throw new Error("Invalid evidence");
-  if (v.task_completed !== undefined && typeof v.task_completed !== "boolean") throw new Error("Invalid task_completed");
+  const evidence = validateEvidence(v.evidence);
+  const taskCompleted = v.task_completed === undefined ? undefined : validateBooleanField(v.task_completed, "task_completed");
   const completionConfidence = validateCompletionConfidence(v.completion_confidence);
   return {
     route: v.route, route_acceptance: v.route_acceptance as CallOutcome["route_acceptance"], eta_update_time: v.eta_update_time,
     escalation_needed: v.escalation_needed as CallOutcome["escalation_needed"], evidence_summary: v.evidence_summary,
-    ...(v.evidence !== undefined ? { evidence: v.evidence as string[] } : {}), confidence: v.confidence as CallOutcome["confidence"],
-    ...(v.task_completed !== undefined ? { task_completed: v.task_completed } : {}),
+    ...(evidence !== undefined ? { evidence } : {}), confidence: v.confidence as CallOutcome["confidence"],
+    ...(taskCompleted !== undefined ? { task_completed: taskCompleted } : {}),
     ...(completionConfidence !== undefined ? { completion_confidence: completionConfidence } : {}),
-    ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}), ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
+    ...(typeof v.failure_code === "string" ? { failure_code: v.failure_code } : {}),
+    ...(typeof v.failure_message === "string" ? { failure_message: v.failure_message } : {}),
   };
 }

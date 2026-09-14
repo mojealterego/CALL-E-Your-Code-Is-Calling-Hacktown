@@ -195,7 +195,7 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, stale
 
 ## Implemented
 
-- Explicit transaction preparation with immutable route/ETA constraints.
+- Explicit appointment transaction preparation with immutable identity, provider and prepared-availability constraints.
 - Short-lived, operation-scoped capability bound to participant, authorized phone endpoint and exact constraints.
 - CALL-E server SDK execution with E.164 recipients, region and locale.
 - Provider-side idempotency key for safe retries of the same logical operation.
@@ -332,7 +332,7 @@ The project uses the TypeScript server SDK `@call-e/calle`. The application pass
 The strongest three-minute demonstration is:
 
 ```text
-0:00  Prepared real-world transaction
+0:00  Prepared real-world appointment transaction
 0:15  Capability + authorization boundary
 0:30  CALL-E conversation
 1:00  Authoritative evidence arrives
@@ -345,6 +345,10 @@ The strongest three-minute demonstration is:
 ```
 
 The critical demonstration is that a phone call can produce evidence without being granted direct authority to mutate the business state.
+
+## Current verification status
+
+The feature branch is the submission branch. Every source change must pass both `npm test` and `npm run typecheck` in GitHub Actions before the live-call gate is used. The live workflow is manual-only and requires an explicit one-call authorization input plus `CALLE_API_KEY` and an E.164 `AEGIS_LIVE_PHONE`; it never silently falls back to dry-run.
 
 ## Production hardening backlog
 

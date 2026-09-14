@@ -88,15 +88,8 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
   if (evidence.doctorConfirmed !== transaction.constraints.doctorName) reasons.push("confirmed doctor does not match prepared appointment");
   if (evidence.conversationCompleted !== true) reasons.push("conversation was not cleanly completed");
 
-  const firstVisitFields = [
-    evidence.identityDocumentReminderGiven,
-    evidence.arrive30MinutesEarly,
-    evidence.registrationReminderGiven,
-    evidence.informationFormReminderGiven,
-  ];
+  const firstVisitFields = [evidence.identityDocumentReminderGiven, evidence.arrive30MinutesEarly, evidence.registrationReminderGiven, evidence.informationFormReminderGiven];
   if (evidence.patientConfirmed !== "yes" && firstVisitFields.some((field) => field === true)) reasons.push("first-visit instructions were reported before positive patient identity confirmation");
-  if (evidence.firstVisit === "no" && firstVisitFields.some((field) => field === true)) reasons.push("first-visit instructions were reported for a non-first visit");
-  if (evidence.firstVisit === "yes" && firstVisitFields.some((field) => field !== true)) reasons.push("first-visit administrative instructions are incomplete");
 
   if (evidence.appointmentDecision === "cancel") {
     if (reasons.length === 0) return { decision: "abort", reasons: ["patient explicitly declined the appointment"] };
@@ -115,6 +108,8 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
   if (evidence.appointmentDecision !== "confirm") reasons.push("appointment decision is unknown");
   if (evidence.appointmentConfirmed !== "yes") reasons.push("patient did not positively confirm the appointment");
   if (evidence.firstVisit === "unknown") reasons.push("first-visit status is unknown");
+  if (evidence.firstVisit === "no" && firstVisitFields.some((field) => field === true)) reasons.push("first-visit instructions were reported for a non-first visit");
+  if (evidence.firstVisit === "yes" && firstVisitFields.some((field) => field !== true)) reasons.push("first-visit administrative instructions are incomplete");
 
   const incomplete = evidence.providerStatus !== "completed"
     || evidence.patientConfirmed !== "yes"

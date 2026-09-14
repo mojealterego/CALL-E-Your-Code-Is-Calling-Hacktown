@@ -52,6 +52,66 @@ Key invariants:
 
 The full recovered design is documented in [`docs/knowledge-assurance-fabric.md`](docs/knowledge-assurance-fabric.md).
 
+## Cognitive Assurance Runtime
+
+The cognitive stack is implemented as one governed pipeline rather than a collection of independent AI agents:
+
+```text
+CALL-E / raw evidence
+        ↓
+R1 extraction → R2 interpretation
+        ↓
+Graph of Thoughts: hypotheses / paths / contradictions
+        ↓
+Semantic + Episodic + Temporal + Graph retrieval
+        ↓
+Bitemporal state reconstruction + Knowledge Graph
+        ↓
+R3/Titans contextual synthesis
+        ↓
+Claim Ledger + Evidence Graph
+        ↓
+CEV / evidence-value evaluation
+        ↓
+Adversarial Gate
+        ↓
+Decision Engine
+        ↓
+JEPA / prediction (expected next state)
+        ↓
+Authoritative readback
+        ↓
+Formal Assurance
+        ↓
+COMMIT / ABORT / RECOVER
+        ↓
+Evidence Receipt
+```
+
+`src/cognitive-assurance-stack.ts` is the integration boundary. Reasoning, prediction, retrieval and memory can propose or score hypotheses; none of them can independently authorize a consequential state change.
+
+### Seven-dimensional memory fabric
+
+The runtime distinguishes:
+
+1. working memory — current conversation;
+2. episodic memory — concrete prior events;
+3. semantic memory — knowledge, policies and procedures;
+4. procedural memory — how to execute a known procedure;
+5. holographic memory — associative reconstruction;
+6. bitemporal memory — when a fact was valid vs when the system recorded it;
+7. graph memory — relations among claims, entities and evidence.
+
+`src/memory-fabric.ts` exposes separate `semanticRetrieve`, `episodicRetrieve`, `temporalRetrieve` and `graphRetrieve` operations. Retrieval carries provenance and is explicitly non-authoritative: `MEMORY_NEVER_AUTHORIZES_EXECUTION`.
+
+### Graph of Thoughts + compound reasoning
+
+GoT stores competing hypotheses and contradiction edges instead of forcing a single early interpretation. Multiple post-call interpretations are compared after execution; agreement is a confidence signal, while material disagreement routes to `RECOVER`. Consensus is never treated as proof.
+
+### Epistemic and provenance boundary
+
+Claims are first-class objects with status such as `unknown`, `unverified`, `verified`, `contradicted` and `stale`, plus evidence references, authority and temporal provenance. A semantic-memory result can explain *why* a procedure is relevant but cannot establish the live transactional state.
+
 ## Evolution & Assurance Engine
 
 AegisFleet does not treat failures as log entries that disappear after the run. A failed or uncertain trajectory becomes structured evidence for a controlled improvement loop:
@@ -76,6 +136,40 @@ EXPLICIT AUTHORIZATION
 ```
 
 Implemented safeguards include offline assurance replay, hard-negative regression cases, failure classification, trust degradation, temporal freshness checks, provider handshakes, adaptive load shedding that preserves verification, semantic cache entries that are explicitly **not** authorization-eligible, and throwaway sandbox artifacts.
+
+### Synthetic Red Team
+
+`src/synthetic-red-team.ts` generates ten deterministic trajectories covering:
+
+- identity confusion;
+- contradictory answers;
+- stale appointment state;
+- unavailable slots;
+- prompt injection;
+- memory poisoning;
+- tool manipulation;
+- duplicate execution;
+- partial CALL-E results;
+- webhook races.
+
+Each trajectory is observed and verified against the same safety boundary used by the runtime. The suite is deterministic and performs no real phone call.
+
+### DGM / digital genotype / RSI boundary
+
+`src/digital-genotype.ts` models the runtime as a versioned digital genotype. A mutation produces a **candidate**, runs synthetic red-team checks and compares shadow metrics against a baseline. Promotion remains `reject | shadow | candidate`, and every candidate carries `authorizationRequired: true`.
+
+The improvement loop therefore remains:
+
+```text
+OBSERVE → GENERATE IMPROVEMENT → MUTATE → SYNTHETIC RED TEAM
+→ FORMAL VERIFICATION → BENCHMARK → HUMAN / GOVERNANCE APPROVAL → PROMOTE
+```
+
+RSI/evolution cannot modify itself, deploy itself, change authorization, or execute a phone call.
+
+### Temporal anomaly sensor
+
+`src/snn-anomaly.ts` provides a bounded LIF-inspired temporal event-stream sensor. It detects unusual event timing and emits a recovery signal. It is deliberately outside the reasoning and authorization path: anomaly detection can increase scrutiny, but cannot authorize execution.
 
 The engine enforces a constitutional safety boundary:
 
@@ -116,6 +210,10 @@ AegisFleet separates them. This prevents an ambiguous, failed, duplicated, stale
 - Deterministic dry-run path using the same validation and reconciliation pipeline.
 - Evolution & Assurance Engine with replay, failure memory, counterfactual challenge, trust/freshness state and promotion gating.
 - Claim Ledger, Evidence Graph, monitorability scoring, trajectory security checks, post-call compound-reasoning reconciliation, epistemic status, stale-state protection, side-effect conservation and versioned Conversation Contract.
+- Integrated cognitive assurance runtime boundary.
+- Seven-dimensional memory retrieval fabric with provenance.
+- Deterministic synthetic red-team generator and evolution candidate boundary.
+- Bounded temporal anomaly sensor isolated from authorization.
 - Regression tests covering safety invariants and the orchestrated transaction path.
 - Explicit live-mode opt-in; no silent fallback from live to dry-run.
 

@@ -1,182 +1,34 @@
 import { createHash } from "node:crypto";
 
-export type CognitiveStage =
-  | "observe"
-  | "profile"
-  | "hypothesis"
-  | "generate"
-  | "sandbox"
-  | "red-team"
-  | "formal-check"
-  | "benchmark"
-  | "shadow"
-  | "approval"
-  | "release"
-  | "rollback";
-
-export interface WorkingMemoryItem<T> {
-  key: string;
-  value: T;
-  priority: number;
-  expiresAt?: string;
-}
-
-/** Bounded working memory: newest high-priority context wins; it never authorizes side effects. */
-export class WorkingMemory<T> {
-  private readonly items = new Map<string, WorkingMemoryItem<T>>();
-  constructor(private readonly capacity = 32) {
-    if (capacity < 1) throw new Error("capacity must be positive");
-  }
-  set(item: WorkingMemoryItem<T>): void {
-    this.items.set(item.key, item);
-    if (this.items.size > this.capacity) {
-      const victim = [...this.items.values()].sort((a, b) => a.priority - b.priority)[0];
-      if (victim) this.items.delete(victim.key);
-    }
-  }
-  get(key: string, now = new Date().toISOString()): T | undefined {
-    const item = this.items.get(key);
-    if (!item) return undefined;
-    if (item.expiresAt && Date.parse(item.expiresAt) <= Date.parse(now)) {
-      this.items.delete(key);
-      return undefined;
-    }
-    return item.value;
-  }
-  snapshot(): WorkingMemoryItem<T>[] { return [...this.items.values()]; }
-}
-
+export type CognitiveStage = "observe" | "profile" | "hypothesis" | "generate" | "sandbox" | "red-team" | "formal-check" | "benchmark" | "shadow" | "approval" | "release" | "rollback";
+export interface WorkingMemoryItem<T> { key: string; value: T; priority: number; expiresAt?: string; }
+export class WorkingMemory<T> { private readonly items = new Map<string, WorkingMemoryItem<T>>(); constructor(private readonly capacity = 32) { if (capacity < 1) throw new Error("capacity must be positive"); } set(item: WorkingMemoryItem<T>): void { this.items.set(item.key, item); if (this.items.size > this.capacity) { const victim = [...this.items.values()].sort((a, b) => a.priority - b.priority)[0]; if (victim) this.items.delete(victim.key); } } get(key: string, now = new Date().toISOString()): T | undefined { const item = this.items.get(key); if (!item) return undefined; if (item.expiresAt && Date.parse(item.expiresAt) <= Date.parse(now)) { this.items.delete(key); return undefined; } return item.value; } snapshot(): WorkingMemoryItem<T>[] { return [...this.items.values()]; } }
 export interface HolographicVector { readonly bits: Uint8Array; readonly text: string; }
-
-/** Deterministic HDC/holographic-style associative memory for prototype indexing; not a learned neural model. */
-export class HolographicMemory {
-  constructor(private readonly dimensions = 256) {
-    if (dimensions < 32) throw new Error("dimensions must be >= 32");
-  }
-  encode(text: string): HolographicVector {
-    const bits = new Uint8Array(this.dimensions);
-    const normalized = normalize(text);
-    for (let i = 0; i < normalized.length; i++) {
-      const h = hash32(`${normalized[i]}:${i}`);
-      bits[h % this.dimensions] ^= (h >>> 8) & 1;
-    }
-    return { bits, text };
-  }
-  similarity(a: HolographicVector, b: HolographicVector): number {
-    if (a.bits.length !== b.bits.length) throw new Error("vector dimensions differ");
-    let same = 0;
-    for (let i = 0; i < a.bits.length; i++) if (a.bits[i] === b.bits[i]) same++;
-    return same / a.bits.length;
-  }
-}
-
+export class HolographicMemory { constructor(private readonly dimensions = 256) { if (dimensions < 32) throw new Error("dimensions must be >= 32"); } encode(text: string): HolographicVector { const bits = new Uint8Array(this.dimensions); const normalized = normalize(text); for (let i = 0; i < normalized.length; i++) { const h = hash32(`${normalized[i]}:${i}`); const index = h % this.dimensions; bits[index] = (bits[index] ?? 0) ^ ((h >>> 8) & 1); } return { bits, text }; } similarity(a: HolographicVector, b: HolographicVector): number { if (a.bits.length !== b.bits.length) throw new Error("vector dimensions differ"); let same = 0; for (let i = 0; i < a.bits.length; i++) if (a.bits[i] === b.bits[i]) same++; return same / a.bits.length; } }
 export interface IndexedMemory<T> { id: string; text: string; value: T; vector: HolographicVector; recordedAt: string; }
-
-/** Shimi-style deterministic semantic index: HDC prefilter + lexical overlap, with temporal decay. */
-export class ShimiIndex<T> {
-  private readonly entries: IndexedMemory<T>[] = [];
-  constructor(private readonly memory = new HolographicMemory()) {}
-  add(id: string, text: string, value: T, recordedAt = new Date().toISOString()): void {
-    this.entries.push({ id, text, value, vector: this.memory.encode(text), recordedAt });
-  }
-  search(query: string, limit = 5, now = new Date().toISOString()): IndexedMemory<T>[] {
-    const q = this.memory.encode(query);
-    return this.entries.map((entry) => ({ entry, score: this.score(query, q, entry, now) }))
-      .sort((a, b) => b.score - a.score).slice(0, limit).map(({ entry }) => entry);
-  }
-  private score(query: string, vector: HolographicVector, entry: IndexedMemory<T>, now: string): number {
-    const lexical = jaccard(query, entry.text);
-    const holographic = this.memory.similarity(vector, entry.vector);
-    const ageDays = Math.max(0, (Date.parse(now) - Date.parse(entry.recordedAt)) / 86_400_000);
-    const decay = Math.exp(-ageDays / 30);
-    return (0.6 * lexical + 0.4 * holographic) * decay;
-  }
-}
-
+export class ShimiIndex<T> { private readonly entries: IndexedMemory<T>[] = []; constructor(private readonly memory = new HolographicMemory()) {} add(id: string, text: string, value: T, recordedAt = new Date().toISOString()): void { this.entries.push({ id, text, value, vector: this.memory.encode(text), recordedAt }); } search(query: string, limit = 5, now = new Date().toISOString()): IndexedMemory<T>[] { const q = this.memory.encode(query); return this.entries.map((entry) => ({ entry, score: this.score(query, q, entry, now) })).sort((a, b) => b.score - a.score).slice(0, limit).map(({ entry }) => entry); } private score(query: string, vector: HolographicVector, entry: IndexedMemory<T>, now: string): number { const lexical = jaccard(query, entry.text); const holographic = this.memory.similarity(vector, entry.vector); const ageDays = Math.max(0, (Date.parse(now) - Date.parse(entry.recordedAt)) / 86_400_000); return (0.6 * lexical + 0.4 * holographic) * Math.exp(-ageDays / 30); } }
 export interface CausalEdge { from: string; to: string; weight: number; }
 export interface CounterfactualResult { removed: string; affected: string[]; riskScore: number; }
-
-/** Small causal graph for bounded what-if analysis; it never mutates production state. */
-export class CounterfactualGraph {
-  private readonly edges: CausalEdge[] = [];
-  addEdge(edge: CausalEdge): void { if (edge.weight < 0 || edge.weight > 1) throw new Error("weight must be 0..1"); this.edges.push(edge); }
-  removeNode(node: string): CounterfactualResult {
-    const affected = this.edges.filter((e) => e.from === node).sort((a, b) => b.weight - a.weight).map((e) => e.to);
-    const riskScore = this.edges.filter((e) => e.from === node).reduce((sum, e) => sum + e.weight, 0);
-    return { removed: node, affected, riskScore: Math.min(1, riskScore) };
-  }
-}
-
+export class CounterfactualGraph { private readonly edges: CausalEdge[] = []; addEdge(edge: CausalEdge): void { if (edge.weight < 0 || edge.weight > 1) throw new Error("weight must be 0..1"); this.edges.push(edge); } removeNode(node: string): CounterfactualResult { const outgoing = this.edges.filter((e) => e.from === node).sort((a, b) => b.weight - a.weight); return { removed: node, affected: outgoing.map((e) => e.to), riskScore: Math.min(1, outgoing.reduce((sum, e) => sum + e.weight, 0)) }; } }
 export interface MutationCandidate { id: string; parent: string; change: string; expectedGain: number; resourceCost: number; }
 export interface MutationEvaluation { candidate: MutationCandidate; sandboxPassed: boolean; redTeamPassed: boolean; formalCheckPassed: boolean; benchmarkGain: number; eligibleForShadow: boolean; }
-
-/** DGM/AlphaEvolve/RSI-inspired proposal loop. It generates data-only candidates; it never executes or overwrites source code. */
-export function evaluateMutation(candidate: MutationCandidate, checks: { sandbox: boolean; redTeam: boolean; formal: boolean; benchmarkGain: number }): MutationEvaluation {
-  const eligibleForShadow = checks.sandbox && checks.redTeam && checks.formal && checks.benchmarkGain > 0 && candidate.expectedGain > candidate.resourceCost;
-  return { candidate, sandboxPassed: checks.sandbox, redTeamPassed: checks.redTeam, formalCheckPassed: checks.formal, benchmarkGain: checks.benchmarkGain, eligibleForShadow };
-}
-
-export function nextEvolutionStage(stage: CognitiveStage): CognitiveStage {
-  const order: CognitiveStage[] = ["observe", "profile", "hypothesis", "generate", "sandbox", "red-team", "formal-check", "benchmark", "shadow", "approval", "release", "rollback"];
-  const i = order.indexOf(stage);
-  return order[Math.min(order.length - 1, i + 1)] ?? "observe";
-}
-
+export function evaluateMutation(candidate: MutationCandidate, checks: { sandbox: boolean; redTeam: boolean; formal: boolean; benchmarkGain: number }): MutationEvaluation { const eligibleForShadow = checks.sandbox && checks.redTeam && checks.formal && checks.benchmarkGain > 0 && candidate.expectedGain > candidate.resourceCost; return { candidate, sandboxPassed: checks.sandbox, redTeamPassed: checks.redTeam, formalCheckPassed: checks.formal, benchmarkGain: checks.benchmarkGain, eligibleForShadow }; }
+export function nextEvolutionStage(stage: CognitiveStage): CognitiveStage { const order: CognitiveStage[] = ["observe", "profile", "hypothesis", "generate", "sandbox", "red-team", "formal-check", "benchmark", "shadow", "approval", "release", "rollback"]; const i = order.indexOf(stage); return order[Math.min(order.length - 1, i + 1)] ?? "observe"; }
 export interface SystemState { version: string; activeCapabilities: string[]; errorRate: number; latencyMs: number; trust: number; }
 export function introspect(state: SystemState): Readonly<SystemState> { return Object.freeze({ ...state, activeCapabilities: [...state.activeCapabilities] }); }
-
-export function trustAfterFailure(current: number, severity: number): number {
-  if (severity < 0 || severity > 1) throw new Error("severity must be 0..1");
-  return Math.max(0, Math.min(1, current * (1 - 0.5 * severity)));
-}
-
-export function temporalDecay(ageDays: number, halfLifeDays = 30): number {
-  if (ageDays < 0 || halfLifeDays <= 0) throw new Error("invalid decay parameters");
-  return Math.pow(0.5, ageDays / halfLifeDays);
-}
-
-export function paretoFront<T extends { latencyMs: number; costUsd: number; errorRate: number }>(items: T[]): T[] {
-  return items.filter((candidate, i) => !items.some((other, j) => j !== i && dominates(other, candidate)));
-}
-
+export function trustAfterFailure(current: number, severity: number): number { if (severity < 0 || severity > 1) throw new Error("severity must be 0..1"); return Math.max(0, Math.min(1, current * (1 - 0.5 * severity))); }
+export function temporalDecay(ageDays: number, halfLifeDays = 30): number { if (ageDays < 0 || halfLifeDays <= 0) throw new Error("invalid decay parameters"); return Math.pow(0.5, ageDays / halfLifeDays); }
+export function paretoFront<T extends { latencyMs: number; costUsd: number; errorRate: number }>(items: T[]): T[] { return items.filter((candidate, i) => !items.some((other, j) => j !== i && dominates(other, candidate))); }
 export interface ResourceTask { id: string; priority: number; estimatedMs: number; }
-export function shedLoad(tasks: ResourceTask[], maxTasks: number): ResourceTask[] {
-  if (maxTasks < 0) throw new Error("maxTasks must be non-negative");
-  return [...tasks].sort((a, b) => b.priority - a.priority || a.estimatedMs - b.estimatedMs).slice(0, maxTasks);
-}
-
-export function compressPrompt(text: string, maxTokens: number): string {
-  if (maxTokens < 1) throw new Error("maxTokens must be positive");
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  const selected = [...new Set(words)].slice(0, maxTokens);
-  return selected.join(" ");
-}
-
-export function hardNegatives<T>(items: Array<{ value: T; loss: number }>, limit: number): T[] {
-  return [...items].sort((a, b) => b.loss - a.loss).slice(0, limit).map((item) => item.value);
-}
-
+export function shedLoad(tasks: ResourceTask[], maxTasks: number): ResourceTask[] { if (maxTasks < 0) throw new Error("maxTasks must be non-negative"); return [...tasks].sort((a, b) => b.priority - a.priority || a.estimatedMs - b.estimatedMs).slice(0, maxTasks); }
+export function compressPrompt(text: string, maxTokens: number): string { if (maxTokens < 1) throw new Error("maxTokens must be positive"); return [...new Set(text.trim().split(/\s+/).filter(Boolean))].slice(0, maxTokens).join(" "); }
+export function hardNegatives<T>(items: Array<{ value: T; loss: number }>, limit: number): T[] { return [...items].sort((a, b) => b.loss - a.loss).slice(0, limit).map((item) => item.value); }
 export interface GatewayCapability { name: string; scopes: string[]; }
-/** MCP gateway boundary: capabilities are explicit and phone execution is intentionally not exposed here. */
-export class McpGateway {
-  private readonly capabilities = new Map<string, GatewayCapability>();
-  register(capability: GatewayCapability): void { this.capabilities.set(capability.name, { ...capability, scopes: [...capability.scopes] }); }
-  authorize(name: string, scope: string): boolean { return this.capabilities.get(name)?.scopes.includes(scope) ?? false; }
-  list(): GatewayCapability[] { return [...this.capabilities.values()].map((c) => ({ ...c, scopes: [...c.scopes] })); }
-}
-
+export class McpGateway { private readonly capabilities = new Map<string, GatewayCapability>(); register(capability: GatewayCapability): void { this.capabilities.set(capability.name, { ...capability, scopes: [...capability.scopes] }); } authorize(name: string, scope: string): boolean { return this.capabilities.get(name)?.scopes.includes(scope) ?? false; } list(): GatewayCapability[] { return [...this.capabilities.values()].map((c) => ({ ...c, scopes: [...c.scopes] })); } }
 export type DecisionCycle = "validate" | "approve" | "execute" | "reconcile" | "commit" | "abort" | "recover";
-export function decisionCycle(input: { policy: boolean; evidence: boolean; contradiction: boolean }): DecisionCycle {
-  if (!input.policy) return "abort";
-  if (input.contradiction || !input.evidence) return "recover";
-  return "commit";
-}
-
+export function decisionCycle(input: { policy: boolean; evidence: boolean; contradiction: boolean }): DecisionCycle { if (!input.policy) return "abort"; if (input.contradiction || !input.evidence) return "recover"; return "commit"; }
 function normalize(text: string): string { return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim(); }
 function tokens(text: string): Set<string> { return new Set(normalize(text).split(" ").filter(Boolean)); }
 function jaccard(a: string, b: string): number { const A = tokens(a); const B = tokens(b); const intersection = [...A].filter((x) => B.has(x)).length; const union = new Set([...A, ...B]).size; return union ? intersection / union : 0; }
-function hash32(value: string): number { const digest = createHash("sha256").update(value).digest(); return digest.readUInt32BE(0); }
-function dominates<T extends { latencyMs: number; costUsd: number; errorRate: number }>(a: T, b: T): boolean {
-  return a.latencyMs <= b.latencyMs && a.costUsd <= b.costUsd && a.errorRate <= b.errorRate
-    && (a.latencyMs < b.latencyMs || a.costUsd < b.costUsd || a.errorRate < b.errorRate);
-}
+function hash32(value: string): number { return createHash("sha256").update(value).digest().readUInt32BE(0); }
+function dominates<T extends { latencyMs: number; costUsd: number; errorRate: number }>(a: T, b: T): boolean { return a.latencyMs <= b.latencyMs && a.costUsd <= b.costUsd && a.errorRate <= b.errorRate && (a.latencyMs < b.latencyMs || a.costUsd < b.costUsd || a.errorRate < b.errorRate); }

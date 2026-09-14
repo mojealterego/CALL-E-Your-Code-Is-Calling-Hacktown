@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify:meta": "npm test -- tests/meta-architect-34-69.test.ts",
+    "verify:decision-loop": "npm test -- tests/meta-architect-decision-loop.test.ts",
     "verify:final": "npm test && npm run typecheck && npm run demo"
   },
   "dependencies": {

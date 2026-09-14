@@ -52,8 +52,10 @@ async function main() {
     console.log(`PREPARE route=${incident.proposedRoute} maxEta=${incident.maxEta}`);
   }
   const result = await runIncident(incident, { live, ledger });
-  console.log(JSON.stringify({ state: result.record.state, transactionId: result.transaction?.transactionId ?? result.record.transactionId, decision: result.reconciliation?.decision ?? result.record.transactionDecision, reasons: result.reconciliation?.reasons ?? result.record.transactionReasons, reused: result.reused, operationKey: result.record.operationKey, callId: result.record.callId, outcome: result.outcome, receipt: result.receipt ?? result.record.transactionReceipt, auditDigest: result.record.auditDigest, previousAuditDigest: result.record.previousAuditDigest, callsPlaced: live ? (result.record.callId ? 1 : 0) : 0 }, null, 2));
+  const liveStatus = result.record.callId ? (result.record.state === "resolved" || result.record.state === "recovering" || result.record.state === "escalated" ? result.record.state : "unknown") : "no_call";
+  console.log(JSON.stringify({ state: result.record.state, transactionId: result.transaction?.transactionId ?? result.record.transactionId, decision: result.reconciliation?.decision ?? result.record.transactionDecision, reasons: result.reconciliation?.reasons ?? result.record.transactionReasons, reused: result.reused, operationKey: result.record.operationKey, callId: result.record.callId, liveStatus, outcome: result.outcome, receipt: result.receipt ?? result.record.transactionReceipt, auditDigest: result.record.auditDigest, previousAuditDigest: result.record.previousAuditDigest, callsPlaced: live ? (result.record.callId ? 1 : 0) : 0 }, null, 2));
   if (!live) console.log("DRY-RUN GUARANTEE: no provider request and no phone call were made.");
   if (live && !result.record.callId) throw new Error("Live CALL-E test did not create a call task; no outbound call was placed.");
+  if (live && result.record.state !== "resolved") throw new Error(`Live CALL-E test did not complete successfully; callId=${result.record.callId} state=${result.record.state}. No green workflow is allowed for an unresolved live call.`);
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

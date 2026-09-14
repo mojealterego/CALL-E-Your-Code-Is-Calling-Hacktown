@@ -10,30 +10,36 @@ describe("voice transaction reconciliation", () => {
     maxEta: "19:00",
   });
 
+  const validEvidence = {
+    route: "B",
+    eta: "18:40",
+    acceptance: "yes" as const,
+    escalationNeeded: "none" as const,
+    confidence: "high" as const,
+    evidenceSummary: "Driver accepted Route B and confirmed ETA.",
+    evidenceItems: ["Driver accepted Route B.", "Driver stated revised ETA 18:40."],
+    taskCompleted: true,
+    providerStatus: "completed" as const,
+  };
+
   it("commits matching high-confidence evidence from a completed call", () => {
-    expect(reconcileTransaction(tx, {
-      route: "B",
-      eta: "18:40",
-      acceptance: "yes",
-      confidence: "high",
-      evidenceSummary: "Driver accepted Route B and confirmed ETA.",
-      evidenceItems: ["Driver accepted Route B.", "Driver stated revised ETA 18:40."],
-      taskCompleted: true,
-      providerStatus: "completed",
-    }).decision).toBe("commit");
+    expect(reconcileTransaction(tx, validEvidence).decision).toBe("commit");
+  });
+
+  it("recovers instead of committing when CALL-E requests escalation", () => {
+    const result = reconcileTransaction(tx, { ...validEvidence, escalationNeeded: "urgent" });
+    expect(result.decision).toBe("recover");
+    expect(result.reasons).toContain("CALL-E requested escalation or did not establish that escalation is unnecessary");
+  });
+
+  it("recovers when escalation status is missing", () => {
+    const { escalationNeeded: _, ...withoutEscalation } = validEvidence;
+    const result = reconcileTransaction(tx, withoutEscalation);
+    expect(result.decision).toBe("recover");
   });
 
   it("aborts when the participant proposes a conflicting route", () => {
-    const result = reconcileTransaction(tx, {
-      route: "C",
-      eta: "18:40",
-      acceptance: "yes",
-      confidence: "high",
-      evidenceSummary: "Driver accepted Route C.",
-      evidenceItems: ["Driver accepted Route C."],
-      taskCompleted: true,
-      providerStatus: "completed",
-    });
+    const result = reconcileTransaction(tx, { ...validEvidence, route: "C" });
     expect(result.decision).toBe("abort");
     expect(result.reasons).toContain("observed route does not match prepared route");
   });
@@ -41,6 +47,7 @@ describe("voice transaction reconciliation", () => {
   it("recovers instead of committing incomplete evidence", () => {
     const result = reconcileTransaction(tx, {
       acceptance: "unknown",
+      escalationNeeded: "unknown",
       confidence: "unknown",
       evidenceSummary: "Call state could not establish the route.",
       taskCompleted: false,
@@ -51,29 +58,15 @@ describe("voice transaction reconciliation", () => {
 
   it("recovers when the call matches but provider evidence is absent", () => {
     const result = reconcileTransaction(tx, {
-      route: "B",
-      eta: "18:40",
-      acceptance: "yes",
-      confidence: "high",
-      evidenceSummary: "Driver accepted Route B and confirmed ETA.",
-      taskCompleted: true,
-      providerStatus: "completed",
+      ...validEvidence,
+      evidenceItems: undefined,
     });
     expect(result.decision).toBe("recover");
     expect(result.reasons).toContain("CALL-E terminal evidence is missing");
   });
 
   it("recovers a failed CALL-E task even when the conversation appears to match", () => {
-    const result = reconcileTransaction(tx, {
-      route: "B",
-      eta: "18:40",
-      acceptance: "yes",
-      confidence: "high",
-      evidenceSummary: "Driver accepted Route B and confirmed ETA.",
-      evidenceItems: ["Driver accepted Route B."],
-      taskCompleted: true,
-      providerStatus: "failed",
-    });
+    const result = reconcileTransaction(tx, { ...validEvidence, providerStatus: "failed" });
     expect(result.decision).toBe("recover");
     expect(result.reasons).toContain("authoritative CALL-E status is not completed");
   });

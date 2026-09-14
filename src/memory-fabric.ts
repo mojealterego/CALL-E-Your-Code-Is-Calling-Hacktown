@@ -39,8 +39,8 @@ export interface BitemporalMemoryItem extends MemoryItem {
 /**
  * Seven-dimensional memory:
  * working, episodic, semantic, procedural, holographic, bitemporal and graph.
- * The first five are content collections; bitemporal and graph are orthogonal
- * indexes over that content. Semantic RAG is an access mechanism, not memory.
+ * Bitemporal and graph are orthogonal indexes, so they remain optional for
+ * compatibility with the original five-collection fabric.
  */
 export interface MemoryFabric {
   working: MemoryItem[];
@@ -48,8 +48,8 @@ export interface MemoryFabric {
   semantic: MemoryItem[];
   procedural: MemoryItem[];
   holographic: MemoryItem[];
-  bitemporal: BitemporalMemoryItem[];
-  graph: MemoryGraphEdge[];
+  bitemporal?: BitemporalMemoryItem[];
+  graph?: MemoryGraphEdge[];
 }
 
 export function emptyMemoryFabric(): MemoryFabric {
@@ -72,7 +72,7 @@ export function proceduralRetrieve(query: string, fabric: MemoryFabric, limit = 
 export function temporalRetrieve(at: string, fabric: MemoryFabric, limit = 20): BitemporalMemoryItem[] {
   const t = Date.parse(at);
   if (!Number.isFinite(t)) throw new Error("Invalid temporal query");
-  return fabric.bitemporal
+  return (fabric.bitemporal ?? [])
     .filter((item) => Date.parse(item.validFrom) <= t && (!item.validTo || t < Date.parse(item.validTo)))
     .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt))
     .slice(0, limit);
@@ -98,7 +98,7 @@ export function graphRetrieve(query: string, fabric: MemoryFabric, limit = 10): 
   const direct = semanticRag(query, all, limit);
   const directIds = new Set(direct.map((item) => item.id));
   const linkedIds = new Set<string>();
-  for (const edge of fabric.graph) {
+  for (const edge of fabric.graph ?? []) {
     if (directIds.has(edge.from)) linkedIds.add(edge.to);
     if (directIds.has(edge.to)) linkedIds.add(edge.from);
   }

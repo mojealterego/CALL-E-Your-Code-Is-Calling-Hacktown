@@ -73,7 +73,9 @@ The repository's default `npm run demo` path is provider-free and safe for repro
 
 ## Testing
 
-The latest repository CI passes installation, the full test suite and TypeScript type checking.
+Verified on the current submission branch: GitHub Actions CI run #520 completed successfully with `npm test`, TypeScript type checking, and the deterministic `npm run demo`. CodeRabbit status is also successful.
+
+The live-call workflow is deliberately separate from normal CI. It requires explicit authorization for one live CALL-E test, performs a credential preflight without placing a call, then runs regression tests and typecheck before the single live transaction.
 
 ## Live-demo requirement
 
@@ -82,8 +84,9 @@ The recorded live demonstration must use only an authorized E.164 test recipient
 ## Submission checklist
 
 - [ ] Join/register for the CALL-E hackathon on Devpost.
-- [ ] Create fork of `CALLE-AI/awesome-phone-call-agents`.
-- [ ] Add `skills/voice-transaction-coordinator/` and README entry.
+- [x] Create fork of `CALLE-AI/awesome-phone-call-agents`.
+- [x] Add `skills/voice-transaction-coordinator/` to the fork contribution branch.
+- [ ] Add README resource-list entry in the fork branch.
 - [ ] Run `python3 scripts/validate_repository.py` in the fork.
 - [ ] Open upstream PR and copy its URL here and into Devpost.
 - [ ] Record a public video under 3 minutes showing the project functioning.

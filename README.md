@@ -28,6 +28,14 @@ These are deliberately bounded: QPU/FPGA dispatch, zk-SNARK proving, autonomous 
 
 Full mapping: `docs/asi-transcendence-70-88.md`. Dedicated regression suite: `tests/asi-transcendence-stack.test.ts`.
 
+### Transcendence capabilities 89–99
+
+`src/transcendence-89-99.ts` adds bounded contracts for Synthetic Category Theory (`objects → morphisms → functor mapping`), multi-valued/perspectival epistemic logic, contradiction-isolating epistemic defragmentation, bounded DGM swarm branching/validated merge, non-executable hardware/software transpilation targets, formal-constraint + adversarial mutation approval, substrate latency/energy/thermal optimization, quantum-classical planning boundaries, energy-aware gating, constitutional alignment integrity checks and epistemic humility/rollback readiness.
+
+Capabilities 92–98 deliberately cannot become a new production authority: branches are sandbox records, transpilation emits non-executable artifacts, quantum execution remains an explicit backend boundary, substrate selection is profile-based, and alignment is a gate rather than an objective rewrite. Capability 91 preserves contradictory evidence by isolation; capability 99 suppresses low-confidence decisions while reserving compute for monitoring and keeping rollback ready.
+
+Full mapping: `docs/transcendence-89-99.md`. Dedicated regression suite: `tests/transcendence-89-99.test.ts`.
+
 ### Rust SNN + Zenoh fast path
 
 `rust/snn-zenoh/` adds an actual Rust leaky-integrate-and-fire spiking-neural-network fast path. Each inference frame emits explicit spike events and carries an enforced **1 ms target budget** with measured elapsed time. Optional feature `zenoh-transport` adds Zenoh 1.x publication of serialized SNN frames. The budget is a gate/target, not a claim that arbitrary hardware or networks will always deliver sub-millisecond end-to-end latency.
@@ -61,6 +69,7 @@ npm install
 npm run verify:final
 npm run verify:meta
 npm run verify:asi
+npm run verify:transcendence
 ```
 
 Rust fast-path verification:
@@ -84,6 +93,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 - Added bounded research adapters for the remaining meta-architecture skills, including negotiation/data-driven decision contracts, resilience, adaptive routing, zero-trust boundaries and non-executable tool/architecture generation.
 - Added the dedicated governed Meta-Architect 34–69 layer and regression suite, including a six-gate RSI release protocol with mandatory rollback on failed evidence.
 - Added the ASI Transcendence 70–88 bounded layer and dedicated regression suite.
+- Added the Transcendence 89–99 bounded layer and dedicated regression suite: category/functor mapping, multi-valued epistemic state, defragmentation, sandbox swarm merge, transpilation boundaries, formal/adversarial approval, substrate/energy gates, hybrid quantum planning, alignment integrity and epistemic humility.
 - Added a Rust LIF SNN fast path with explicit 1 ms budget accounting and optional Zenoh 1.x transport.
 - Added bounded ImandraX-style proof-request/invariant gating and a one-cycle MARS metacognitive reflection controller.
 - Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.

@@ -34,4 +34,43 @@ describe("audit ledger", () => {
     expect(history[2]!.previousAuditDigest).toBe(history[1]!.auditDigest);
     expect(history.map((entry) => entry.state)).toEqual(["detected", "validated", "prepared"]);
   });
+
+  it("returns deep copies so callers cannot mutate hash-linked history", () => {
+    const ledger = new AuditLedger();
+    ledger.reserve("op-1");
+    ledger.transition("op-1", "validated", { transactionReasons: ["original"] });
+    const firstRead = ledger.history();
+    firstRead[1]!.transactionReasons!.push("tampered");
+    firstRead[1]!.outcome = {
+      route: "tampered",
+      route_acceptance: "yes",
+      eta_update_time: "18:00",
+      escalation_needed: "none",
+      evidence_summary: "tampered",
+      confidence: "high",
+    };
+    const secondRead = ledger.history();
+    expect(secondRead[1]!.transactionReasons).toEqual(["original"]);
+    expect(secondRead[1]!.outcome).toBeUndefined();
+  });
+
+  it("keeps the legacy complete helper compatible with the verification state machine", () => {
+    const ledger = new AuditLedger();
+    ledger.reserve("op-1");
+    ledger.transition("op-1", "validated");
+    ledger.transition("op-1", "prepared");
+    ledger.transition("op-1", "calling");
+    const record = ledger.complete("op-1", {
+      route: "B",
+      route_acceptance: "yes",
+      eta_update_time: "18:40",
+      escalation_needed: "none",
+      evidence_summary: "Driver confirmed Route B.",
+      evidence: ["Driver confirmed Route B."],
+      confidence: "high",
+      task_completed: true,
+    }, "call_123");
+    expect(record.state).toBe("resolved");
+    expect(ledger.history().map((entry) => entry.state)).toEqual(["detected", "validated", "prepared", "calling", "verifying", "resolved"]);
+  });
 });

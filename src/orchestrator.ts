@@ -14,7 +14,9 @@ function failureOutcome(message: string) { return validateOutcome({ route: "", r
 
 export async function runIncident(incident: Incident, options: { live: boolean; ledger?: AuditLedger } = { live: false }) {
   const ledger = options.ledger ?? new AuditLedger();
-  const operationKey = `incident:${incident.id}:call:${incident.vehicleId}`;
+  const liveTestId = options.live ? process.env.AEGIS_LIVE_TEST_ID?.trim() : undefined;
+  if (options.live && !liveTestId) throw new Error("AEGIS_LIVE_TEST_ID is required for each controlled live test");
+  const operationKey = `incident:${incident.id}:call:${incident.vehicleId}${liveTestId ? `:test:${liveTestId}` : ""}`;
   const reserved = ledger.reserve(operationKey);
   if (reserved.state !== "detected") return { record: reserved, reused: true, outcome: reserved.outcome };
   const policy = validateIncident(incident, options.live);

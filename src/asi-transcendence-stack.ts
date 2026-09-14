@@ -36,7 +36,7 @@ export function anticipatoryRender<T>(scenarios: Array<{ scenario: string; solut
 
 export type HDCVSA = Uint8Array;
 export function vsaBind(a: HDCVSA, b: HDCVSA): HDCVSA { if (a.length !== b.length) throw new Error("dimensions differ"); return Uint8Array.from(a, (x, i) => x ^ (b[i] ?? 0)); }
-export function vsaBundle(vectors: HDCVSA[]): HDCVSA { if (!vectors.length) return new Uint8Array(); const out = new Uint8Array(vectors[0]!.length); for (const v of vectors) for (let i = 0; i < out.length; i++) out[i] ^= v[i] ?? 0; return out; }
+export function vsaBundle(vectors: HDCVSA[]): HDCVSA { if (!vectors.length) return new Uint8Array(); const out = new Uint8Array(vectors[0]!.length); for (const v of vectors) for (let i = 0; i < out.length; i++) out[i] = (out[i] ?? 0) ^ (v[i] ?? 0); return out; }
 
 export type QPUJob = { algorithm: string; qasm: string; backend: "simulator" | "external-qpu" };
 export function compileQASM(problem: string, backend: QPUJob["backend"] = "simulator"): QPUJob { const safe = problem.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 256); return { algorithm: "bounded-classical-to-qasm", qasm: `OPENQASM 3; // ${safe}`, backend }; }

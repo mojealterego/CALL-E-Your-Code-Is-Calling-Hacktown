@@ -21,8 +21,8 @@ describe("orchestrator", () => {
 
     expect(result.record.state).toBe("resolved");
     expect(result.outcome?.route_acceptance).toBe("yes");
-    expect(result.reflexion?.kind).toBe("safe_resolution");
-    expect(result.reflexion?.safeToAutoResolve).toBe(false);
+    expect(result.reflexion?.value.kind).toBe("safe_resolution");
+    expect(result.reflexion?.value.safeToAutoResolve).toBe(false);
     expect(reflexionMemory.size).toBe(1);
     expect(reflexionMemory.validAt(new Date().toISOString())).toHaveLength(1);
   });
@@ -33,9 +33,9 @@ describe("orchestrator", () => {
     const result = await runIncident({ ...incident, phone: "invalid" }, { live: false, ledger, reflexionMemory });
 
     expect(result.record.state).toBe("escalated");
-    expect(result.reflexion?.kind).toBe("policy_failure");
-    expect(result.reflexion?.safeToAutoResolve).toBe(false);
-    expect(result.reflexion?.correction).toMatch(/escalat/i);
+    expect(result.reflexion?.value.kind).toBe("policy_failure");
+    expect(result.reflexion?.value.safeToAutoResolve).toBe(false);
+    expect(result.reflexion?.value.correction).toMatch(/escalat/i);
     expect(reflexionMemory.size).toBe(1);
   });
 

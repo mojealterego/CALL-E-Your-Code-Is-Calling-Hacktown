@@ -39,5 +39,6 @@ export async function executeWithCalle(
   const structured = extractStructuredResult(call);
   const outcome = validateOutcome(structured);
   const callValue = call as unknown as Record<string, unknown>;
-  return { callId: typeof callValue.id === "string" ? callValue.id : undefined, outcome };
+  const callId = typeof callValue.id === "string" ? callValue.id : undefined;
+  return callId ? { callId, outcome } : { outcome };
 }

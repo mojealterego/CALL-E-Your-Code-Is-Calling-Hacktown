@@ -47,13 +47,14 @@ bitemporal episodic memory
 - Bitemporal decision memory with valid-time / recording-time separation and point-in-time reconstruction.
 - **Decision Intelligence layer:** deterministic assessment of policy, evidence, confidence, latency and cost, plus bounded baseline-versus-candidate comparison for shadow evaluation.
 - **Bounded Reflexion layer:** converts policy, execution, validation and uncertain outcomes into explicit retrospective findings and correction guidance; findings are always marked `safeToAutoResolve: false`.
+- **Orchestrator integration:** every non-reused execution stores its Reflexion finding in a bitemporal episodic memory store; terminal idempotent reuse does not create a duplicate finding.
 - **Deterministic Synthetic Red-Team harness:** adversarial cases cover policy rejection, missing evidence, low confidence, malformed outcomes, duplicate operations, budget breaches, contradictory outcomes and replayed events. Every case must preserve escalation safety.
 - Automated regression tests and GitHub Actions CI.
 - Grant proposal, architecture, security model and judge-ready three-minute demo script.
 
 ## Cognitive control plane
 
-The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants deterministically.
+The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants. The orchestrator now persists each non-reused Reflexion finding as an episodic bitemporal record.
 
 See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping. CoALA, JEPA, HDC/holographic memory, Graph of Thought, R2/R3 reasoning, AlphaEvolve/DGM mutation loops, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV, ImandraX and an MCP Gateway are explicitly treated as research-track extensions until they have concrete implementations and reproducible evaluation. The project does not claim capabilities that are not present in code.
 
@@ -99,6 +100,10 @@ See [`docs/architecture.md`](docs/architecture.md) for the runtime model and CAL
 
 See [`docs/security.md`](docs/security.md). The prototype deliberately does not claim provider signature verification, persistent enterprise storage, RBAC, or production-grade webhook infrastructure unless those controls are actually configured.
 
+## Evaluation
+
+See [`docs/evaluation.md`](docs/evaluation.md) for the deterministic validation matrix, safety metrics and production-pilot measurement plan. The repository distinguishes test evidence from future production measurements and does not fabricate performance numbers.
+
 ## Demo
 
 See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is under three minutes and demonstrates the safety gate, structured outcome contract, idempotency behavior and impact thesis.
@@ -112,6 +117,7 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   ├── architecture.md
 │   ├── cognitive-control-plane.md
 │   ├── demo-script.md
+│   ├── evaluation.md
 │   ├── grant-proposal.md
 │   └── security.md
 ├── src/

@@ -74,7 +74,8 @@ export async function recoverIncident(
   ledger: AuditLedger,
   apiKey = process.env.CALLE_API_KEY,
 ) {
-  const operationKey = `incident:${incident.id}:call:${incident.vehicleId}`;
+  const liveTestId = process.env.AEGIS_LIVE_TEST_ID?.trim();
+  const operationKey = `incident:${incident.id}:call:${incident.vehicleId}${liveTestId ? `:test:${liveTestId}` : ""}`;
   const current = ledger.reserve(operationKey);
   if (current.state !== "recovering") throw new Error(`incident is not recoverable from state ${current.state}`);
   if (!current.callId) throw new Error("cannot recover without an existing CALL-E call id");

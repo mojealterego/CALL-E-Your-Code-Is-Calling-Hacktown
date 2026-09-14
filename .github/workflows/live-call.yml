@@ -3,21 +3,19 @@ name: LIVE CALL-E Test
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref to execute"
-        required: true
-        default: "feat/voice-transaction-core-v5"
-        type: string
       confirmation:
-        description: "Type exactly I AUTHORIZE ONE TEST CALL"
+        description: "Authorize exactly ONE real CALL-E phone call"
         required: true
-        type: string
+        type: choice
+        options:
+          - I AUTHORIZE ONE TEST CALL
 
 permissions:
   contents: read
 
 jobs:
   live-call:
+    if: ${{ inputs.confirmation == 'I AUTHORIZE ONE TEST CALL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -29,16 +27,10 @@ jobs:
       CALLE_BASE_URL: https://api.heycall-e.com
       AEGIS_LIVE_TEST_ID: ${{ github.run_id }}
     steps:
-      - name: Authorize exactly one live call
-        shell: bash
-        run: |
-          test "$CONFIRMATION" = "I AUTHORIZE ONE TEST CALL" || { echo "Live call authorization failed."; exit 1; }
-        env:
-          CONFIRMATION: ${{ inputs.confirmation }}
-      - name: Checkout selected ref under test
+      - name: Checkout tested feature branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: feat/voice-transaction-core-v5
       - name: Show exact revision under test
         run: git rev-parse HEAD
       - name: Setup Node
@@ -75,5 +67,4 @@ jobs:
       - name: Require provider call identifier
         shell: bash
         run: |
-          echo "The live transaction step must have produced a CALL-E callId."
-          echo "If npm run live exits successfully without a callId, the workflow must be treated as failed."
+          echo "Live transaction completed only if npm run live reported a CALL-E callId and resolved state."

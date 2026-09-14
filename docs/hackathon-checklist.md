@@ -3,7 +3,7 @@
 ## Verified in repository
 
 - [x] TypeScript project builds with `npm run typecheck`.
-- [x] Automated test suite passes in GitHub Actions.
+- [x] Automated test suite passes in GitHub Actions on the latest verified `main` head (`3ec1221f7a964436b7eebdaf0510bed96de79b45`).
 - [x] Default `npm run demo` path is deterministic dry-run with no provider/phone call.
 - [x] Policy gate is authoritative for execution.
 - [x] Structured outcome validation is enforced.
@@ -14,6 +14,8 @@
 - [x] Synthetic red-team cases are deterministic and regression-tested.
 - [x] Webhook replay/malformed-input protections are covered by the evaluation plan.
 - [x] Research-track concepts are explicitly separated from implemented capabilities.
+- [x] Reusable community-contribution package is present under `docs/community-contribution/voice-transaction-coordinator/`.
+- [x] Community skill has YAML frontmatter, provider-neutral control rules and separate provider/transaction references.
 
 ## Required before public submission
 

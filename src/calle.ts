@@ -45,7 +45,7 @@ export async function executeWithCalle(
   const appointment = incident.appointment;
   const isAppointmentCall = appointment !== undefined;
   const region = incident.region ?? (isAppointmentCall ? "PL" : process.env.CALLE_REGION ?? "US");
-  const locale = incident.locale ?? (isAppointmentCall ? "pl-PL" : process.env.CALE_LOCALE ?? "en-US");
+  const locale = incident.locale ?? (isAppointmentCall ? "pl-PL" : process.env.CALLE_LOCALE ?? "en-US");
   const conversationContract = isAppointmentCall ? buildConversationContract(appointment.patientName) : undefined;
 
   const task = isAppointmentCall
@@ -60,11 +60,11 @@ export async function executeWithCalle(
         `Prepared replacement availability, and ONLY this availability: ${appointment.availableSlots.map((slot) => `${slot.date} at ${slot.time}`).join(", ")}. Never invent, infer, round, or promise another date or time.`,
         "Privacy rule: first establish that the person is the named patient. If the person is not the patient or identity remains unclear, do not disclose the doctor, appointment date, appointment time, or any other appointment detail. End politely and record patient_confirmed as no or unknown.",
         `Open naturally: introduce yourself as Anna from ${appointment.clinicName} and ask whether you are speaking with ${appointment.patientName}.`,
-        "Only after the patient is confirmed, say exactly: 'Dzwonię w sprawie jutrzejszej wizyty u doktora Pawlaka. Czy będzie pan mógł przyjść?'",
-        "If the patient WILL attend, ask naturally: 'Czy jest to pana pierwsza wizyta w naszej przychodni?'",
+        "Only after the patient is confirmed, say naturally that you are calling about tomorrow's appointment with doktor Pawlak and ask whether the patient will be able to attend.",
+        "If the patient WILL attend, ask naturally whether this is their first visit to the clinic.",
         "If it IS the first visit, naturally remind the patient to bring an identity document and arrive about 30 minutes before the appointment so they can check in at reception and fill out the information form.",
         "If it is NOT the first visit, simply acknowledge the answer. Do not mention the identity document, arriving 30 minutes early, registration, or the information form.",
-        "After either attendance branch, ask exactly: 'Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?' If the patient has no questions, close naturally: 'W takim razie wizytę mamy potwierdzoną. Dziękuję za rozmowę i życzę miłego dnia.'",
+        "After either attendance branch, ask exactly: 'Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?' If the patient has no questions, close exactly: 'W takim razie wizytę mamy potwierdzoną. Dziękuję za rozmowę i życzę miłego dnia.'",
         "If the patient says they cannot attend the current appointment, say exactly: 'Rozumiem. W takim razie mogę sprawdzić najbliższy wolny termin.' Then offer the earliest prepared replacement slot with its date and time.",
         "If the patient says they no longer want the appointment, say exactly: 'Rozumiem. W takim razie odwołam tę wizytę.' Do not offer another slot after an explicit cancellation. End politely and record appointment_decision as cancel.",
         "When rescheduling, offer one prepared slot at a time, starting with the earliest available slot. Ask naturally whether that date and time would work for the patient. Do not dump a list of all slots unless the patient asks for alternatives.",

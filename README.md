@@ -97,7 +97,7 @@ cargo check --features zenoh-transport
 
 ## Submission
 
-See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. External submission artifacts are never fabricated.
+See `docs/demo-script.md`, `docs/hackathon-checklist.md`, `docs/recovered-material-gap-register.md` and `SUBMISSION.md`. External submission artifacts are never fabricated.
 
 ## Work log — 2026-09-14
 
@@ -116,6 +116,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
 - Persisted the implementation and safety boundaries in repository documentation.
+- Recovered additional submission constraints and unresolved external actions from the supplied preparation material; these are tracked explicitly in `docs/recovered-material-gap-register.md`.
 
 ## License
 

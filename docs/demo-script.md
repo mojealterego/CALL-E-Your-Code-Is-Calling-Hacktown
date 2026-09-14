@@ -1,29 +1,242 @@
 # 3-Minute Judge Demo Script
 
-## 0:00–0:25 — The problem
+## 0:00–0:15 — The problem
 
-Show a dashboard/terminal with an A4 closure incident. Say: "A road closure turns a logistics decision into a phone-work problem. A dispatcher should not have to make dozens of calls just to restore the plan."
+Show the appointment-confirmation scenario.
 
-## 0:25–0:55 — Safety gate
+Say:
 
-Run `npm run demo`. Point out that the application validates the purpose, creates an operation identity, and stays in DRY-RUN mode. Emphasize: no phone call is possible in the default path.
+> "The hard part is not making an AI phone call. The hard part is deciding whether a phone conversation is enough evidence to change a real-world state."
 
-## 0:55–1:35 — Autonomous phone task boundary
+## 0:15–0:35 — PREPARE
 
-Show the architecture: incident → policy → CALL-E adapter → structured outcome → evidence gate. Explain that CALL-E is responsible for phone execution while AegisFleet owns the operational decision policy.
+Show the frozen transaction and prepared availability.
 
-## 1:35–2:10 — Structured result
+```text
+Transaction: TX-AF-DEMO-0001
+Clinic: Przychodnia Medica Nova
+Patient: Adam Miauczyński
+Doctor: doktor Pawlak
+Current appointment: 2026-09-15 10:00
+Purpose: appointment confirmation / reschedule / cancellation
+Prepared replacement slots:
+  2026-09-15 09:00
+  2026-09-15 11:30
+  2026-09-16 08:30
+  2026-09-16 13:00
+  2026-09-17 10:30
+```
 
-Show the JSON output. Highlight `route_acceptance`, `eta_update_time`, `escalation_needed`, `evidence_summary`, and `confidence`. Explain that `unknown` is a durable state, not an implicit `no`.
+Say:
 
-## 2:10–2:35 — Resilience
+> "AegisFleet freezes the appointment intent and the allowed replacement slots before the phone call. The voice agent can negotiate naturally, but it cannot invent availability."
 
-Run `npm test`. Point to idempotency and orchestration tests. Explain that re-submitting the same incident reuses the logical operation rather than creating a second call identity.
+## 0:35–1:25 — CALL-E
 
-## 2:35–3:00 — Impact
+Run the explicitly configured live path with the authorized test recipient.
 
-Close with: "AegisFleet is a control plane for phone-based operations. It does not ask an AI to 'sound smart'; it asks the system to make one bounded real-world decision, with evidence, uncertainty and human escalation built into the boundary."
+The agent conducts a natural Polish receptionist-style conversation. The key point is that it is a branching conversation, not a questionnaire.
 
-## Live recording note
+### Attendance confirmed — first visit
 
-For a real CALL-E recording, replace the dry-run command with the explicitly configured live path and use a provisioned test recipient. Never place a real call to a person who has not been authorized for the demonstration.
+```text
+"Dzień dobry, Anna z Przychodni Medica Nova. Czy rozmawiam z panem Adamem Miauczyńskim?"
+
+"Dzwonię w sprawie jutrzejszej wizyty. Chciałam tylko potwierdzić, czy będzie pan na wizycie u doktora Pawlaka?"
+
+Adam: "Tak."
+
+"Czy będzie to pana pierwsza wizyta w naszej przychodni?"
+
+Adam: "Tak."
+
+"W takim razie chciałam jeszcze przypomnieć, żeby zabrać ze sobą dowód osobisty lub inny dokument potwierdzający tożsamość. Proszę też przyjść około 30 minut przed wizytą, żeby spokojnie zgłosić się w rejestracji i wypełnić formularz informacyjny, ponieważ jest to pana pierwsza wizyta."
+
+"Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?"
+
+Adam: "Nie."
+
+"W takim razie wizytę mamy potwierdzoną. Dziękuję za rozmowę i życzę miłego dnia."
+```
+
+### Attendance confirmed — not the first visit
+
+```text
+Adam: "Tak, będę."
+
+"Czy będzie to pana pierwsza wizyta w naszej przychodni?"
+
+Adam: "Nie, już wcześniej byłem."
+
+"Rozumiem, dziękuję. W takim razie wszystko się zgadza."
+
+"Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?"
+
+Adam: "Nie."
+
+"W takim razie wizytę mamy potwierdzoną. Dziękuję za rozmowę i życzę miłego dnia."
+```
+
+### Adam will not attend — reschedule
+
+```text
+Adam: "Nie, jutro nie przyjdę."
+
+"Rozumiem. W takim razie mogę sprawdzić najbliższy wolny termin."
+
+"Najbliższy wolny termin mam 15 września o 9:00. Czy ten termin panu odpowiada?"
+
+Adam: "Nie, godzina mi nie pasuje."
+
+"Rozumiem. A sam dzień panu odpowiada, tylko godzina nie?"
+
+Adam: "Tak, dzień mi pasuje."
+
+"Która godzina byłaby dla pana dogodna?"
+
+Adam: "11:30."
+
+"Tak, mam wolny termin 15 września o 11:30. W takim razie zapisuję pana na ten termin. Czy jest coś, w czym jeszcze mogę pomóc?"
+```
+
+If the day does not suit Adam, offer the next prepared date/time. If the time does not suit him, ask for another time on the same day, but accept it only if that exact time is in prepared availability. Continue until a prepared slot is accepted or options are exhausted.
+
+### Adam no longer wants the appointment
+
+```text
+Adam: "Nie, jutro nie przyjdę. I właściwie nie chcę już tej wizyty."
+
+"Rozumiem. W takim razie anuluję tę wizytę. Dziękuję za informację i życzę miłego dnia."
+```
+
+No replacement slots are offered after an explicit cancellation.
+
+## 1:25–1:45 — EVIDENCE
+
+Show the structured result for the observed branch. For a first visit confirmation it contains:
+
+```text
+patient_confirmed: yes
+appointment_confirmed: yes
+doctor_confirmed: doktor Pawlak
+first_visit: yes
+identity_document_reminder_given: true
+arrive_30_minutes_early: true
+registration_reminder_given: true
+information_form_reminder_given: true
+appointment_decision: confirm
+conversation_completed: true
+confidence: high
+```
+
+For a reschedule, the result additionally records the accepted prepared slot. For cancellation, it records `appointment_decision: cancel` and no replacement slot.
+
+Point out that the spoken conversation is converted into explicit, auditable evidence.
+
+## 1:45–2:05 — RECONCILE → COMMIT / ABORT
+
+Show:
+
+```text
+attendance confirmed + first-visit conditions satisfied
+        OR
+accepted prepared reschedule slot
+        ↓
+DECISION: COMMIT
+```
+
+For cancellation:
+
+```text
+patient explicitly declines appointment
+        ↓
+DECISION: ABORT
+```
+
+Say:
+
+> "The voice agent can understand and negotiate. The transaction layer decides what state change is actually authorized."
+
+## 2:05–2:20 — CONFLICT → ABORT
+
+Show a deterministic conflict fixture:
+
+```text
+prepared doctor: doktor Pawlak
+observed doctor: doktor Nowak
+
+DECISION: ABORT
+reason: confirmed doctor does not match prepared appointment
+```
+
+Say:
+
+> "A confident conversation is still not enough if the evidence conflicts with what was prepared."
+
+## 2:20–2:35 — UNKNOWN → RECOVER
+
+Show an incomplete result:
+
+```text
+appointment_decision: unknown
+CALL-E terminal evidence: incomplete
+
+DECISION: RECOVER
+```
+
+Say:
+
+> "Unknown is not success and it is not permission to blindly place another call. Recovery first reconciles the existing call."
+
+## 2:35–2:50 — EVOLUTION ASSURANCE
+
+Show:
+
+```text
+FAILURE / DRIFT
+      ↓
+COUNTERFACTUAL
+      ↓
+CHALLENGER
+      ↓
+REPLAY
+      ↓
+SHADOW
+      ↓
+PROMOTION CANDIDATE
+      ↓
+EXPLICIT AUTHORIZATION
+```
+
+Say:
+
+> "A failure does not become a new permission. It becomes a regression case. Improvements must survive replay, challenge and comparison before a human-authorized promotion."
+
+## 2:50–3:00 — RECEIPT + closing
+
+Show the transaction receipt, system state manifest, and hash-linked audit digest.
+
+Point to:
+
+- transaction ID;
+- CALL-E call ID;
+- patient identity evidence;
+- appointment evidence;
+- selected replacement slot, if any;
+- decision;
+- verification state;
+- trust state;
+- freshness state;
+- previous audit digest;
+- current audit digest.
+
+Say:
+
+> "CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change."
+
+## Recording safety
+
+- Use only the authorized test recipient.
+- Keep `CALLE_API_KEY` out of the recording and repository.
+- Use `CALL_E_MODE=live` only for the intended live demonstration.
+- The default `npm run demo` path remains provider-free and makes no phone call.

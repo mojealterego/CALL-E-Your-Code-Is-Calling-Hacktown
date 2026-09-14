@@ -8,14 +8,27 @@ const incident = {
   phone: "+48123456789",
   closure: "A4 closure",
   requestedBy: "dispatch",
-  goal: "Inform the driver about the route closure, negotiate a diversion route, and confirm the revised ETA.",
+  proposedRoute: "B",
+  maxEta: "19:00",
+  goal: "Inform the driver about the route closure, verify acceptance of Route B, and confirm the revised ETA.",
 };
 
 describe("orchestrator", () => {
-  it("completes the safe dry-run path", async () => {
+  it("completes the safe dry-run path through commit", async () => {
     const result = await runIncident(incident, { live: false, ledger: new AuditLedger() });
     expect(result.record.state).toBe("resolved");
+    expect(result.record.transactionDecision).toBe("commit");
     expect(result.outcome?.route_acceptance).toBe("yes");
+    expect(result.capability?.capabilityId).toMatch(/^cap_[a-f0-9]{24}$/);
+    expect(result.capability?.endpointDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.record.transactionReceipt?.decision).toBe("commit");
+    expect(result.record.transactionReceipt?.decisionDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.manifest?.verificationState).toBe("verified");
+    expect(result.manifest?.trustLevel).toBe("trusted");
+    expect(result.manifest?.authorizationDecision).toBe("allowed");
+    expect(result.manifest?.freshnessState).toBe("fresh");
+    expect(result.manifest?.constraints).toContain("provider-handshake-required");
+    expect(result.evolution?.authorizationRequired).toBe(true);
   });
 
   it("reuses a terminal result when the same incident is submitted again", async () => {

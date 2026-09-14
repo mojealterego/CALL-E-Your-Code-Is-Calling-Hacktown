@@ -1,28 +1,40 @@
-# Ringostat Adapter — Secondary Telephony Evidence Plane
+# Ringostat telephony evidence adapter
 
-## Purpose
+Ringostat is an optional secondary evidence source for deployments where the authorized phone endpoint is managed by Ringostat. It is not the CALL-E execution primitive for this hackathon and it must never become a second autonomous execution authority.
 
-Ringostat should be treated as an **optional secondary evidence source**, not as the execution engine and not as the business commit authority.
+## Role separation
 
-The hackathon implementation remains CALL-E-first. CALL-E performs the authorized outbound conversation. A Ringostat adapter can later corroborate telephony facts when the authorized endpoint is also managed by a Ringostat Virtual PBX or Call Tracking project.
+```text
+CALL-E       = conversation execution + structured conversational evidence
+Ringostat    = independent telephony evidence
+AegisFleet   = transaction authority + reconciliation
+```
 
-## What Ringostat provides
+The adapter is intentionally downstream of the transaction preparation and authorization layers.
 
-Ringostat documents a Call Log API at `GET https://api.ringostat.net/calls/list` using an `Auth-key`. The export supports fields including `calldate`, `caller`, `dst`, `disposition`, `duration`, `billsec`, `uniqueid`, `recording`, `has_recording`, `call_card` and related call metadata.
+## Evidence available from Ringostat
 
-Ringostat also supports webhooks for incoming and outgoing call lifecycle events. Its documented events include moments before/after a call, call pickup and forwarding. Webhooks can be filtered and can carry call identifiers and other call parameters.
+Ringostat's Call Log API can export call metadata including call date, caller, destination, disposition, duration and recording information. The API is accessed with a project `Auth-key` and supports JSON/CSV export.
 
-Ringostat AI can additionally produce a post-call analysis containing a summary, customer/employee mood, recommendations and VTT transcription data.
+Current documented call statuses include:
 
-## Evidence model
+- `ANSWERED`
+- `NO+ANSWER`
+- `FAILED`
+- `BUSY`
+- `REPEATED`
 
-The adapter should normalize provider-specific facts into a narrow evidence contract rather than leaking Ringostat fields into the transaction engine:
+Ringostat also supports webhooks for telephony events, including incoming and outbound call lifecycle events. Webhook payloads can include a Ringostat call identifier and selected call metadata.
+
+## Normalized evidence contract
+
+A future adapter should normalize provider-specific data before it reaches the transaction engine:
 
 ```ts
-interface TelephonyEvidence {
+export interface TelephonyEvidence {
   source: "ringostat";
   providerCallId: string;
-  status: "answered" | "no_answer" | "failed" | "busy" | "unknown";
+  status: "answered" | "no_answer" | "failed" | "busy" | "repeated" | "unknown";
   durationSeconds?: number;
   recordingAvailable?: boolean;
   observedAt?: string;
@@ -30,107 +42,65 @@ interface TelephonyEvidence {
 }
 ```
 
-The transaction engine should continue to use its existing `ObservedEvidence` contract. `TelephonyEvidence` is corroborating evidence, not a replacement for CALL-E structured task evidence.
+The normalized contract is evidence, not authorization.
 
-## Dual-evidence flow
+## Correlation
 
-```text
-                    PREPARED TRANSACTION
-                           │
-                           ▼
-                       CALL-E
-                           │
-                 conversation evidence
-                           │
-                           ├───────────────┐
-                           │               │
-                           ▼               ▼
-                    CALL-E terminal    Ringostat
-                       result           call log/webhook
-                           │               │
-                           └───────┬───────┘
-                                   ▼
-                            EVIDENCE FUSION
-                                   │
-                                   ▼
-                             RECONCILIATION
-                         /          |          \
-                    COMMIT       ABORT       RECOVER
-```
+The adapter should correlate Ringostat evidence with the same logical operation key used by AegisFleet. Where a provider-specific identifier is available, preserve it as evidence metadata rather than replacing the AegisFleet transaction ID.
 
-## Trust boundaries
+A phone number alone is not sufficient correlation or identity proof. The existing endpoint-bound capability remains the authorization artifact.
 
-### Ringostat webhook is not a commit signal
+## Reconciliation rule
 
-Ringostat webhooks are external notifications. They can be used to wake a reconciliation worker or enrich an audit record, but they must not directly mutate consequential business state.
+Ringostat can corroborate telephony facts:
 
-The adapter should:
+- whether the call was answered;
+- provider disposition;
+- approximate duration;
+- recording availability;
+- provider-side call identifier.
 
-1. validate the configured authentication mechanism;
-2. deduplicate the provider event when an event identifier is available;
-3. normalize the telephony event;
-4. correlate it to the existing operation/call identity;
-5. re-fetch authoritative provider data when the event is incomplete or the decision is consequential;
-6. pass the normalized evidence to the same reconciliation layer used by the CALL-E path.
+Ringostat must not:
 
-### Phone number is still not identity
+- authorize a transaction;
+- override CALL-E structured evidence;
+- turn a webhook into a commit signal;
+- replace authoritative CALL-E recovery for an unresolved CALL-E call;
+- infer participant identity from caller ID or a phone number.
 
-A Ringostat call record can establish telephony facts. It does not, by itself, establish that the human who answered is the intended participant. The existing AegisFleet Trust Plane therefore remains unchanged:
+The transaction engine therefore remains:
 
 ```text
-WHO   = participant identity
-WHERE = authorized phone endpoint
-WHAT  = scoped capability
-TTL   = bounded authorization lifetime
+prepared intent
+      +
+CALL-E terminal evidence
+      +
+optional independent telephony evidence
+      ↓
+RECONCILIATION
+      ↓
+COMMIT / ABORT / RECOVER
 ```
 
-## Why this is useful for AegisFleet
+## Webhook handling
 
-The integration creates a second evidence dimension:
+Ringostat documents webhook delivery as notification to an external URL and expects HTTP 200 acknowledgement. AegisFleet should therefore treat Ringostat webhooks as notifications, deduplicate them at the integration boundary, validate the payload shape, and fetch authoritative provider data when the integration exposes a read-after-event operation.
 
-- **CALL-E:** what the conversation established;
-- **Ringostat:** what the telephony infrastructure observed;
-- **AegisFleet:** whether those facts satisfy the prepared transaction.
+A webhook must never directly mutate consequential business state.
 
-For example, a CALL-E result may say that the participant accepted Route B, while Ringostat independently records an answered call with a non-zero duration and a provider call identifier. The two sources can be correlated without allowing either provider to bypass the transaction policy.
+## Security boundary
 
-Conversely, if CALL-E reports an apparent acceptance but Ringostat records a failed/no-answer call, the result must not be promoted to `COMMIT`. The reconciliation policy should produce `RECOVER` or `ABORT` according to the completeness and contradiction rules.
+`Auth-key` is a provider credential and must remain server-side. It must never be committed to source control, sent to an untrusted host, or placed in a client bundle.
 
-## API adapter boundary
+Recordings and transcripts may contain personal data. A production adapter therefore needs explicit retention, access-control, deletion and jurisdiction policies before storing them in the AegisFleet evidence ledger.
 
-Keep Ringostat-specific HTTP code outside the transaction engine:
+## Why this adapter stays optional
 
-```text
-src/
-  transaction.ts       ← provider-independent decision logic
-  orchestrator.ts      ← workflow
-  calle.ts             ← CALL-E execution adapter
-  recovery.ts          ← CALL-E authoritative recovery
-  ringostat.ts         ← future Ringostat evidence adapter
-```
+The hackathon demo must remain self-contained around CALL-E. Ringostat only strengthens the architecture for PBX-managed deployments by adding an independent telephony evidence plane. It is deliberately not added as a runtime dependency until an actual Ringostat-managed endpoint is available for end-to-end verification.
 
-The future `ringostat.ts` module should accept a server-side `Auth-key` from secret storage and expose narrow functions such as:
+References:
 
-```ts
-getCallLogWindow(...): Promise<TelephonyEvidence[]>
-normalizeWebhook(...): TelephonyEvidence
-```
-
-Do not place the Ringostat `Auth-key` in frontend code, repository files, transaction metadata, receipts or logs.
-
-## Hackathon scope decision
-
-Do **not** make Ringostat a required dependency for the current CALL-E submission.
-
-The correct role is:
-
-> **CALL-E is the required voice execution primitive. Ringostat is an optional secondary telephony evidence adapter.**
-
-This preserves the hackathon requirement while making the architecture extensible to real enterprise PBX deployments.
-
-## Sources
-
-- Ringostat API: Export of statistics from the Call Log — `https://ringostat.readme.io/reference/get_calls-list`
-- Ringostat API integration documentation — `https://help.ringostat.com/en/articles/6306981-how-to-configure-the-integration-with-your-system-via-ringostat-api`
-- Ringostat incoming-call webhook documentation — `https://help.ringostat.com/en/articles/6559993-webhooks-incoming-call-event`
-- Ringostat AI processed-call webhook documentation — `https://help.ringostat.com/en/articles/9281387-webhooks-event-call-processed-by-ai`
+- https://help.ringostat.com/en/articles/6312678-ringostat-api-export-of-statistics-from-the-call-log
+- https://help.ringostat.com/en/articles/6313229-how-to-realise-the-ringostat-integration-using-webhooks
+- https://help.ringostat.com/en/articles/6413217-call-log-description-of-call-statuses
+- https://ringostat.com/

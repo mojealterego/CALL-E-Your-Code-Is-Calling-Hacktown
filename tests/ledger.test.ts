@@ -23,11 +23,15 @@ describe("audit ledger", () => {
     expect(() => ledger.transition("op-1", "resolved")).toThrow(/Invalid incident transition/);
   });
 
-  it("links successive audit records", () => {
+  it("keeps an append-only hash-linked transition history", () => {
     const ledger = new AuditLedger();
     ledger.reserve("op-1");
     const validated = ledger.transition("op-1", "validated");
-    const approved = ledger.transition("op-1", "approved");
-    expect(approved.previousAuditDigest).toBe(validated.auditDigest);
+    const prepared = ledger.transition("op-1", "prepared");
+    const history = ledger.history();
+    expect(history).toHaveLength(3);
+    expect(prepared.previousAuditDigest).toBe(validated.auditDigest);
+    expect(history[2]!.previousAuditDigest).toBe(history[1]!.auditDigest);
+    expect(history.map((entry) => entry.state)).toEqual(["detected", "validated", "prepared"]);
   });
 });

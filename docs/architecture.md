@@ -2,32 +2,143 @@
 
 ## Design objective
 
-Separate **intent**, **policy**, **provider execution**, **evidence validation**, and **operational writeback** so that a language model never directly controls a consequential enterprise side effect.
+Treat a real phone interaction as an unreliable transaction participant rather than as an authoritative business action.
+
+The system separates:
+
+- **intent** — what the business wants to happen;
+- **prepare** — the exact constraints that may be committed;
+- **authorization** — a short-lived capability bound to the participant, endpoint and constraints;
+- **provider execution** — the real CALL-E phone interaction;
+- **evidence** — what the terminal call result establishes;
+- **reconciliation** — comparison of observed evidence with prepared intent;
+- **commit / abort / recover** — the only permitted business dispositions;
+- **audit** — a reconstructable record of the decision.
+
+A language model never directly controls the consequential state transition.
 
 ## Runtime stages
 
-1. **Incident intake** — an operational event identifies the vehicle, affected route and required phone task.
-2. **Policy gate** — validates purpose, phone format, execution mode, and live-call restrictions.
-3. **Idempotency reservation** — assigns a stable operation key before provider I/O.
-4. **Provider execution** — dry-run simulation or CALL-E server SDK.
-5. **Structured extraction** — provider result is reduced to an allowlisted schema.
-6. **Evidence gate** — the result needs explicit evidence and high confidence for automatic resolution.
-7. **Disposition** — `resolved` returns an ERP-ready decision; otherwise `escalated` creates a human work item.
-8. **Audit** — every state transition receives a SHA-256 digest for later reconciliation.
+1. **Incident intake** — an operational event identifies the participant, incident and proposed action.
+2. **Policy gate** — validates identity, E.164 phone format, purpose and live-call restrictions.
+3. **Idempotency reservation** — assigns a stable logical operation key before provider I/O.
+4. **Prepare** — freezes the transaction ID, proposed route and maximum ETA.
+5. **Authorize** — creates a short-lived capability bound to the participant, endpoint and exact transaction constraints.
+6. **Provider execution** — dry-run simulation or CALL-E server SDK.
+7. **Terminal verification** — require successful CALL-E completion before accepting evidence as a commit candidate.
+8. **Evidence extraction** — retain structured result, terminal completion state and provider evidence.
+9. **Optional secondary evidence** — in a Ringostat-managed deployment, normalize independent PBX/call-log facts without allowing them to bypass the transaction boundary.
+10. **Reconciliation** — compare observed route, acceptance and ETA against the prepared transaction.
+11. **Disposition**:
+   - `commit` when all constraints match;
+   - `abort` when terminal evidence conflicts with the prepared transaction;
+   - `recover` when execution/evidence is incomplete or uncertain.
+12. **Authoritative recovery** — re-fetch an existing CALL-E call by ID and resume verification without placing a second outbound call.
+13. **Audit** — every transition is recorded in append-only hash-linked history.
+
+## Transaction boundary
+
+```text
+Prepared business state
+        │
+        ▼
+   CALL-E execution
+        │
+        ▼
+Terminal evidence
+        │
+        ├──────── optional Ringostat corroboration
+        │
+        ▼
+  Reconciliation
+   /      |      \
+COMMIT   ABORT   RECOVER
+                 │
+                 ▼
+        authoritative re-fetch
+                 │
+                 ▼
+             VERIFY
+```
+
+The call itself is never the commit boundary.
 
 ## Why this is stronger than a raw voice-agent demo
 
-The differentiator is not merely outbound calling. The system controls the **decision boundary** around calling:
+The differentiator is not outbound calling. It is the **decision boundary around a real-world phone action**:
 
-- it can refuse a call;
-- it can refuse automatic resolution;
-- it can represent uncertainty explicitly;
-- it can survive retries without generating a second logical operation;
-- it can run without provider credentials for reproducible evaluation;
-- it keeps provider-specific execution behind an adapter.
+- the system can refuse execution before provider I/O;
+- the provider result cannot directly mutate business state;
+- a conflicting answer produces `abort` rather than an implicit success;
+- `unknown` or incomplete execution produces `recover` rather than a blind retry;
+- recovery re-fetches the existing provider call instead of initiating another call;
+- provider idempotency prevents duplicate logical calls during network retries;
+- dry-run and live execution use the same business reconciliation pipeline;
+- provider-specific behavior is isolated behind `src/calle.ts`;
+- an optional external PBX adapter can add corroborating evidence without becoming a second commit authority.
+
+## Trust plane
+
+A phone number is an execution endpoint, not a complete participant identity or authorization grant.
+
+```text
+WHO   = participant
+WHERE = authorized phone endpoint
+WHAT  = transaction-scoped capability
+TTL   = bounded authorization lifetime
+```
+
+The capability is non-secret and short-lived. It is bound to the operation, participant, endpoint and exact prepared constraints. It is not presented as proof of human identity or voice biometric authentication.
+
+## CALL-E integration
+
+The prototype uses the CALL-E TypeScript server SDK for backend-controlled execution. The adapter supplies:
+
+- an explicit E.164 recipient through `recipients`;
+- region and locale;
+- a bounded natural-language task;
+- a strict structured result schema;
+- caller-owned metadata containing the logical operation key and capability correlation data;
+- a stable provider idempotency key.
+
+The terminal result provides the structured result together with `task_completed`, `completion_confidence`, `evidence`, failure information and recipient/attempt state. AegisFleet treats these as provider evidence, not as permission to commit.
+
+## Optional Ringostat evidence adapter
+
+Ringostat is deliberately modeled as a **secondary telephony evidence source**, not as an alternative execution engine.
+
+Its documented Call Log API can expose fields such as `uniqueid`, `disposition`, `duration`, `recording`, `has_recording`, caller/destination and call timestamps. Its webhook system can emit incoming/outgoing call events and can be filtered. Ringostat AI can also produce post-call summaries, sentiment, recommendations and VTT transcription data.
+
+The intended future adapter boundary is:
+
+```text
+Ringostat API/Webhook
+        │
+        ▼
+ringostat.ts
+        │
+        ▼
+normalized TelephonyEvidence
+        │
+        ├──────────────┐
+        ▼              ▼
+      audit        reconciliation
+```
+
+Ringostat evidence can corroborate telephony facts such as answered/failed disposition, duration, recording availability or provider call identity. It cannot override the prepared route/ETA constraints, create authorization, or directly commit business state.
+
+The Ringostat `Auth-key` must remain server-side. Webhook notifications are treated as untrusted external events and should be correlated, deduplicated where possible and revalidated through authoritative provider data before consequential downstream mutation.
+
+See `docs/ringostat-adapter.md` for the adapter contract and scope decision.
+
+## Webhooks and recovery
+
+CALL-E terminal webhooks are notifications, not the authoritative business state. The current provider contract uses an event envelope with a top-level event ID and call-task ID in the event data. The `CALL-E-Event-Id` header must match the event ID; duplicate event IDs are rejected.
+
+The prototype recovery path re-fetches the authoritative call task through the CALL-E API before changing a recovering transaction back into verification. A webhook alone never causes a downstream write.
 
 ## MCP / API relationship
 
-CALL-E currently exposes a Streamable HTTP MCP endpoint with `plan_call`, `run_call`, and `get_call_run`. In the MCP flow, `run_call` starts a previously planned call and `get_call_run` is used for polling; the provider documentation explicitly advises persisting the `run_id` and avoiding a second `run_call` after a local timeout.
+CALL-E also exposes a Streamable HTTP MCP integration with planning, execution and call-run retrieval capabilities. AegisFleet can use that interface when embedded in an agent host, while the current prototype uses the server SDK for deterministic backend orchestration.
 
-For a production deployment, AegisFleet can use either MCP for agent-host integration or the server SDK/API for backend-controlled orchestration. The current prototype keeps the domain layer independent from that choice.
+The business transaction model is intentionally independent from whether CALL-E is reached through MCP, the server SDK, or the HTTP API.

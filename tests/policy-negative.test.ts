@@ -8,6 +8,8 @@ const base = {
   closure: "A4 closure",
   requestedBy: "dispatch",
   goal: "Inform driver about route closure, negotiate a route and confirm revised ETA.",
+  proposedRoute: "A4 -> DK94",
+  maxEta: "19:00",
 };
 
 describe("policy negative boundaries", () => {

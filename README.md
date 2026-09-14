@@ -1,47 +1,88 @@
-# AegisFleet — Incident Voice Command
+# AegisFleet — Voice Transaction Coordinator
 
-**Governed autonomous phone coordination for logistics exceptions, built with CALL-E.**
+**A governed transaction layer for real-world phone actions, built with CALL-E.**
 
-AegisFleet turns a logistics incident into a controlled phone workflow: validate the incident, reserve a stable operation identity, execute a bounded phone task, validate the structured outcome, require evidence for automatic resolution, and escalate whenever the evidence is insufficient.
+AegisFleet treats a phone call as an unreliable real-world transaction participant. CALL-E performs the conversation; AegisFleet decides whether the evidence is sufficient to change the prepared business state.
 
-> **Safety default:** `npm run demo` is fully local. It makes zero network requests and places zero phone calls.
+> **Core boundary:** CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change.
 
-## Core thesis
+> **Safety default:** `npm run demo` is fully local. It places zero phone calls and does not require a CALL-E API key.
 
-A voice agent is only useful to an enterprise when its output can be bounded and connected safely to the next business action. AegisFleet therefore focuses on the control plane around the phone call rather than on conversation quality alone.
+## The key idea: voice is a transaction participant, not a commit authority
 
 ```text
-incident
-  ↓
-policy gate
-  ↓
-idempotency reservation
-  ↓
-CALL-E / deterministic simulator
-  ↓
-strict outcome validation
-  ↓
-evidence + confidence gate
-  ├── resolved → ERP-ready decision
-  └── escalated → human action
-  ↓
-audit ledger
+INTENT → PREPARE → AUTHORIZE → CALL-E → READBACK → RECONCILE → COMMIT / ABORT / RECOVER → RECEIPT
+                                  │
+                                  └── evidence, never authorization
 ```
+
+The phone conversation is deliberately **not** the commit boundary. A positive conversational answer is insufficient unless it matches the prepared transaction constraints and CALL-E reports successful terminal completion.
+
+## Evolution & Assurance Engine
+
+AegisFleet does not treat failures as log entries that disappear after the run. A failed or uncertain trajectory becomes structured evidence for a controlled improvement loop:
+
+```text
+EXPERIENCE
+   ↓
+FAILURE / DRIFT
+   ↓
+HYPOTHESIS
+   ↓
+COUNTERFACTUAL + CHALLENGER
+   ↓
+SANDBOX / SHADOW
+   ↓
+BASELINE COMPARISON
+   ↓
+PROMOTION CANDIDATE
+   ↓
+EXPLICIT AUTHORIZATION
+   ↺
+```
+
+Implemented safeguards include offline assurance replay, hard-negative regression cases, failure classification, trust degradation, temporal freshness checks, provider handshakes, adaptive load shedding that preserves verification, semantic cache entries that are explicitly **not authorization-eligible**, and throwaway sandbox artifacts.
+
+The engine enforces a constitutional safety boundary:
+
+- `CAPABILITY_NEVER_GRANTS_AUTHORIZATION`
+- `UNKNOWN_NEVER_MEANS_SUCCESS`
+- `UNVERIFIED_NEVER_COMMITS`
+- `ONE_LOGICAL_TRANSACTION_MAX_ONE_EXTERNAL_EXECUTION`
+- `WEBHOOK_NEVER_AUTHORIZES_STATE_MUTATION`
+- `PREPARED_AVAILABILITY_ONLY`
+- `MEMORY_NEVER_AUTHORIZES_EXECUTION`
+
+An evolution candidate always requires explicit authorization; the improvement mechanism cannot promote itself.
+
+## Why this matters
+
+Traditional voice automation often collapses three different facts into one:
+
+1. the call happened;
+2. the recipient said something;
+3. the business system is now allowed to change.
+
+AegisFleet separates them. This prevents an ambiguous, failed, duplicated, stale, or conflicting call from silently becoming an operational state change.
 
 ## Implemented
 
-- TypeScript domain model and explicit incident state machine.
-- Policy gate with E.164 validation, purpose-bounded goals, live-mode opt-in and fixture-number protection.
-- Deterministic dry-run simulator that follows the same outcome-validation path as live execution.
-- CALL-E server SDK adapter with strict result extraction and validation.
-- JSON Schema contract with `additionalProperties: false` and explicit `unknown` states.
-- Application-level idempotency reservation before provider I/O.
-- Evidence-backed automatic resolution; uncertainty never becomes an implicit success/failure.
-- Human escalation on policy rejection, execution errors, insufficient evidence, low confidence or explicit escalation.
-- Replay-aware webhook contract and event-ID deduplication.
-- Hash-linked audit records for tamper-evident sequencing inside the prototype ledger.
-- Automated regression tests and GitHub Actions CI.
-- Grant proposal, architecture, security model and judge-ready three-minute demo script.
+- Explicit transaction preparation with immutable route/ETA constraints.
+- Short-lived, operation-scoped capability bound to participant, authorized phone endpoint and exact constraints.
+- CALL-E server SDK execution with E.164 recipients, region and locale.
+- Provider-side idempotency key for safe retries of the same logical operation.
+- Strict JSON Schema with explicit `unknown` states.
+- Terminal `task_completed`, completion-confidence and CALL-E evidence captured from the provider result.
+- Authoritative provider terminal status as a prerequisite for commit.
+- Deterministic reconciliation producing `commit`, `abort` or `recover`.
+- `RECOVER` for incomplete/uncertain provider execution instead of accidental retry-and-duplicate behavior.
+- Cryptographic transaction receipts binding prepared transaction, scoped capability, observed evidence and final decision into SHA-256 digests.
+- Append-only, hash-linked prototype audit history.
+- Current CALL-E webhook envelope validation and event-ID/header binding.
+- Deterministic dry-run path using the same validation and reconciliation pipeline.
+- Evolution & Assurance Engine with replay, failure memory, counterfactual challenge, trust/freshness state and promotion gating.
+- Regression tests covering safety invariants and the orchestrated transaction path.
+- Explicit live-mode opt-in; no silent fallback from live to dry-run.
 
 ## Quick start
 
@@ -52,99 +93,138 @@ npm test
 npm run typecheck
 ```
 
-The demo creates a synthetic A4 closure incident and shows the complete governed lifecycle without calling CALL-E or a telephone recipient.
+The default demo is local and performs no provider I/O.
 
-## Live CALL-E execution
+## Trust plane
 
-1. Copy `.env.example` to `.env`.
-2. Add a valid `CALLE_API_KEY`.
-3. Set a provisioned test number with `AEGIS_LIVE_PHONE`.
-4. Run `npm run live`.
+A phone number is an **execution endpoint**, not a complete participant identity or authorization grant.
 
-Live mode is intentionally explicit and does not silently downgrade to dry-run. Invalid configuration fails before provider I/O.
-
-## Result contract
-
-```json
-{
-  "route_acceptance": "yes",
-  "eta_update_time": "16:40",
-  "escalation_needed": "none",
-  "evidence_summary": "Driver confirmed the diversion and stated the revised ETA is 16:40.",
-  "confidence": "high"
-}
+```text
+WHO   = participant identity
+WHERE = authorized phone endpoint
+WHAT  = transaction-scoped capability
 ```
 
-Automatic resolution requires all five conditions: acceptance = `yes`, non-empty ETA, escalation = `none`, non-empty evidence, and confidence = `high`. Otherwise the incident becomes `escalated`.
+Trust degradation can restrict or deny authorization, but trust never grants new authority. Memory and semantic cache can accelerate reasoning, but neither is authorization evidence.
+
+## Transaction receipt
+
+A terminal decision produces a receipt containing:
+
+- `transactionDigest` — digest of the prepared transaction plus its scoped capability;
+- `evidenceDigest` — digest of the authoritative observed evidence;
+- `decisionDigest` — digest binding transaction, capability, evidence and `commit` / `abort` / `recover` together;
+- `receiptId` — stable short identifier derived from the decision digest.
+
+The receipt is an **operational decision record**, not a claim of legal contractual binding.
+
+## Failure semantics
+
+### COMMIT
+
+Only when the participant positively accepts the prepared change, the observed evidence satisfies the prepared constraints, evidence is sufficient, and CALL-E reports successful terminal completion.
+
+### ABORT
+
+Used when terminal evidence is complete but conflicts with the prepared transaction.
+
+### RECOVER
+
+Used when execution or evidence is incomplete or uncertain. Recovery must reconcile the existing CALL-E execution before any new outbound call is considered.
 
 ## Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) for the runtime model and CALL-E integration boundary.
-
-## Security
-
-See [`docs/security.md`](docs/security.md). The prototype deliberately does not claim provider signature verification, persistent enterprise storage, RBAC, or production-grade webhook infrastructure unless those controls are actually configured.
-
-## Demo
-
-See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is under three minutes and demonstrates the safety gate, structured outcome contract, idempotency behavior and impact thesis.
-
-## Repository layout
-
 ```text
-.
-├── .github/workflows/ci.yml
-├── docs/
-│   ├── architecture.md
-│   ├── demo-script.md
-│   ├── grant-proposal.md
-│   └── security.md
-├── src/
-│   ├── calle.ts
-│   ├── cli.ts
-│   ├── domain.ts
-│   ├── fsm.ts
-│   ├── ledger.ts
-│   ├── orchestrator.ts
-│   ├── policy.ts
-│   ├── simulator.ts
-│   ├── validation.ts
-│   └── webhook.ts
-├── tests/
-│   ├── ledger.test.ts
-│   ├── orchestrator.test.ts
-│   ├── policy.test.ts
-│   └── validation.test.ts
-├── .env.example
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── vitest.config.ts
+                    ┌─────────────────────┐
+                    │   Prepared intent   │
+                    │  exact constraints  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Capability Builder  │
+                    │ scoped + expiring   │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │     CALL-E          │
+                    │ phone execution     │
+                    └──────────┬──────────┘
+                               │
+                         evidence only
+                               │
+                               ▼
+              ┌────────────────────────────────┐
+              │ Evolution & Assurance Engine   │
+              │ replay · challenger · trust   │
+              │ freshness · drift · sandbox   │
+              └───────────────┬────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────────┐
+                    │   Reconciliation    │
+                    │  evidence vs intent │
+                    └──────┬─────┬─────┬──┘
+                           /      │      \
+                       COMMIT   ABORT   RECOVER
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Transaction Receipt │
+                    │ evidence + hashes  │
+                    └─────────────────────┘
 ```
 
-## CALL-E integration note
+Provider-specific behavior is isolated in `src/calle.ts`. Business transaction policy lives independently in `src/transaction.ts` and `src/orchestrator.ts`.
 
-The project treats CALL-E as the phone-execution provider. The current prototype uses its TypeScript server SDK for backend-controlled execution. The documented MCP lifecycle is `plan_call → run_call → get_call_run`; the repository keeps provider-specific concerns behind `src/calle.ts` so the business policy remains independent of the transport mechanism.
+## CALL-E integration
 
-## Submission discipline
+The project uses the TypeScript server SDK `@call-e/calle`. The application passes the authorized E.164 recipient through CALL-E's `recipients` field, supplies region/locale, uses `resultSchema`, and sends a stable provider idempotency key. Provider terminal lifecycle remains separate from business evidence so a non-terminal or failed provider state can never become a commit.
 
-The repository distinguishes between **implemented evidence** and **deployment/submission artifacts**. It does not fabricate a deployed URL, live credentials, a completed contribution PR, or a recorded video. Those are final environment-specific steps.
+## Security boundary
 
-For the community contribution requirement, the intended target is `CALLE-AI/awesome-phone-call-agents`. A contribution PR should be opened from a dedicated branch after the final local/CI verification and should link back to this repository.
+- API credentials stay server-side.
+- Live execution requires explicit environment configuration and an explicit recipient phone.
+- Fixture/example phone numbers are rejected in live mode.
+- Webhook events are treated as untrusted notifications; event IDs are deduplicated and bound to the required header.
+- Business state is never committed from a webhook alone; authoritative call state must be reconciled before committing.
+- Capability metadata is scoped and must not be confused with identity authentication.
+- Semantic memory/cache is non-authoritative and cannot authorize execution.
+- Stale state cannot silently overwrite a newer transaction state.
+- Load shedding may remove optional computation, but never removes verification requirements.
+
+## Demo target
+
+The strongest three-minute demonstration is:
+
+```text
+0:00  Prepared real-world transaction
+0:15  Capability + authorization boundary
+0:30  CALL-E conversation
+1:00  Authoritative evidence arrives
+1:15  Challenger asks how the decision could be wrong
+1:30  COMMIT only after verification
+1:50  Prepared-slot negotiation / conflict → ABORT
+2:15  Ambiguous execution → RECOVER, no duplicate side effect
+2:35  Failure becomes replayable hard-negative memory
+2:50  Cryptographic receipt + System State Manifest
+```
+
+The critical demonstration is that a phone call can produce evidence without being granted direct authority to mutate the business state.
 
 ## Production hardening backlog
 
-The prototype intentionally isolates the remaining enterprise work:
-
-- transactional persistent idempotency store;
-- durable audit storage and verification tooling;
-- authenticated provider webhook ingestion;
-- RBAC and organization-level policy configuration;
-- secrets management and rotation;
-- retention/deletion policies and jurisdiction-specific privacy controls;
-- operator console and global kill switch;
-- TMS/ERP write-back connectors;
-- load, fault-injection and red-team evaluation.
+- Durable transactional idempotency storage.
+- Persistent audit storage and independent digest verification.
+- External telephony evidence adapter where required.
+- Enterprise identity/device-attestation adapter.
+- RBAC and organization-level policy configuration.
+- Secrets management and rotation.
+- Retention/deletion and jurisdiction-specific privacy controls.
+- Operator console and global kill switch.
+- TMS/ERP write-back connectors.
+- Fault injection, load testing and red-team evaluation.
 
 ## License
 

@@ -4,6 +4,7 @@ import { assertTransition } from "./fsm.js";
 
 export class AuditLedger {
   private readonly records: CallRecord[] = [];
+  private readonly historyRecords: CallRecord[] = [];
   private readonly keys = new Map<string, CallRecord>();
 
   reserve(operationKey: string): CallRecord {
@@ -18,14 +19,18 @@ export class AuditLedger {
   }
 
   transition(operationKey: string, state: IncidentState, patch: Partial<CallRecord> = {}): CallRecord {
-    const record = this.keys.get(operationKey);
-    if (!record) throw new Error(`Unknown operation key: ${operationKey}`);
-    assertTransition(record.state, state);
-    record.state = state;
-    record.updatedAt = new Date().toISOString();
-    Object.assign(record, patch);
-    this.commit(record);
-    return { ...record };
+    const current = this.keys.get(operationKey);
+    if (!current) throw new Error(`Unknown operation key: ${operationKey}`);
+    assertTransition(current.state, state);
+
+    const next: CallRecord = {
+      ...current,
+      ...patch,
+      state,
+      updatedAt: new Date().toISOString(),
+    };
+    this.commit(next);
+    return { ...next };
   }
 
   complete(operationKey: string, outcome: CallOutcome, callId?: string): CallRecord {
@@ -48,13 +53,23 @@ export class AuditLedger {
     return this.records.map((record) => ({ ...record }));
   }
 
+  history(): CallRecord[] {
+    return this.historyRecords.map((record) => ({ ...record }));
+  }
+
   private commit(record: CallRecord): void {
-    record.previousAuditDigest = this.records.length > 0
-      ? this.records[this.records.length - 1].auditDigest
-      : undefined;
-    record.auditDigest = this.digest(record);
-    if (!this.keys.has(record.operationKey)) this.records.push(record);
-    this.keys.set(record.operationKey, record);
+    const previous = this.historyRecords[this.historyRecords.length - 1];
+    const eventBase: CallRecord = previous?.auditDigest
+      ? { ...record, previousAuditDigest: previous.auditDigest }
+      : { ...record };
+    eventBase.auditDigest = this.digest(eventBase);
+    const event = Object.freeze({ ...eventBase });
+    this.historyRecords.push(event);
+
+    const existingIndex = this.records.findIndex((item) => item.operationKey === record.operationKey);
+    if (existingIndex >= 0) this.records[existingIndex] = { ...event };
+    else this.records.push({ ...event });
+    this.keys.set(record.operationKey, { ...event });
   }
 
   private digest(record: CallRecord): string {

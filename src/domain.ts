@@ -1,14 +1,30 @@
+import type { TransactionReceipt } from "./receipt.js";
+
 export type IncidentState =
   | "detected"
   | "validated"
-  | "approved"
+  | "prepared"
   | "calling"
+  | "verifying"
   | "resolved"
-  | "escalated";
+  | "escalated"
+  | "recovering";
 
 export type RouteAcceptance = "yes" | "no" | "unknown";
 export type EscalationLevel = "urgent" | "normal" | "none" | "unknown";
 export type ConfidenceLabel = "high" | "medium" | "low" | "unknown";
+export type AppointmentConfirmation = "yes" | "no" | "unknown";
+export type AppointmentDecision = "confirm" | "reschedule" | "cancel" | "unknown";
+
+export interface CompletionConfidence {
+  score?: number;
+  label?: string;
+}
+
+export interface AppointmentSlot {
+  date: string;
+  time: string;
+}
 
 export interface Incident {
   id: string;
@@ -17,23 +33,61 @@ export interface Incident {
   closure: string;
   requestedBy: string;
   goal: string;
+  proposedRoute: string;
+  maxEta: string;
+  region?: string;
+  locale?: string;
+  appointment?: {
+    clinicName: string;
+    patientName: string;
+    doctorName: string;
+    appointmentReference: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    availableSlots: AppointmentSlot[];
+  };
 }
 
 export interface CallOutcome {
+  route: string;
   route_acceptance: RouteAcceptance;
   eta_update_time: string;
   escalation_needed: EscalationLevel;
   evidence_summary: string;
+  evidence?: string[];
   confidence: ConfidenceLabel;
+  completion_confidence?: CompletionConfidence | string;
+  task_completed?: boolean;
+  failure_code?: string;
+  failure_message?: string;
+  patient_confirmed?: AppointmentConfirmation;
+  appointment_confirmed?: AppointmentConfirmation;
+  doctor_confirmed?: string;
+  first_visit?: AppointmentConfirmation;
+  identity_document_reminder_given?: boolean;
+  arrive_30_minutes_early?: boolean;
+  registration_reminder_given?: boolean;
+  information_form_reminder_given?: boolean;
+  conversation_completed?: boolean;
+  appointment_decision?: AppointmentDecision;
+  reschedule_requested?: boolean;
+  reschedule_completed?: boolean;
+  new_appointment_date?: string;
+  new_appointment_time?: string;
 }
 
 export interface CallRecord {
   operationKey: string;
   callId?: string;
+  capabilityId?: string;
   state: IncidentState;
   createdAt: string;
   updatedAt: string;
   outcome?: CallOutcome;
+  transactionId?: string;
+  transactionDecision?: "commit" | "abort" | "recover";
+  transactionReasons?: string[];
+  transactionReceipt?: TransactionReceipt;
   previousAuditDigest?: string;
   auditDigest?: string;
 }
@@ -41,27 +95,54 @@ export interface CallRecord {
 export const RESULT_SCHEMA = {
   type: "object",
   additionalProperties: false,
+  required: ["route", "route_acceptance", "eta_update_time", "escalation_needed", "evidence_summary", "confidence"],
+  properties: {
+    route: { type: "string", description: "The exact route the recipient explicitly discussed or accepted. Use an empty string if not established." },
+    route_acceptance: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only when the recipient clearly accepts the proposed route; no when they clearly reject it; unknown when the call does not establish this." },
+    eta_update_time: { type: "string", description: "The revised ETA explicitly stated by the recipient, preferably HH:MM; use an empty string if not established." },
+    escalation_needed: { type: "string", enum: ["urgent", "normal", "none", "unknown"] },
+    evidence_summary: { type: "string", minLength: 1, description: "Concise evidence grounded in what the recipient actually said; never infer missing facts." },
+    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
+  }
+} as const;
+
+export const APPOINTMENT_RESULT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
   required: [
-    "route_acceptance",
-    "eta_update_time",
-    "escalation_needed",
+    "patient_confirmed",
+    "appointment_confirmed",
+    "doctor_confirmed",
+    "first_visit",
+    "identity_document_reminder_given",
+    "arrive_30_minutes_early",
+    "registration_reminder_given",
+    "information_form_reminder_given",
+    "conversation_completed",
+    "appointment_decision",
+    "reschedule_requested",
+    "reschedule_completed",
+    "new_appointment_date",
+    "new_appointment_time",
     "evidence_summary",
     "confidence"
   ],
   properties: {
-    route_acceptance: {
-      type: "string",
-      enum: ["yes", "no", "unknown"]
-    },
-    eta_update_time: { type: "string" },
-    escalation_needed: {
-      type: "string",
-      enum: ["urgent", "normal", "none", "unknown"]
-    },
+    patient_confirmed: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only when the person confirms they are the named patient. If identity is not established, use unknown. Do not disclose appointment details before identity is established." },
+    appointment_confirmed: { type: "string", enum: ["yes", "no", "unknown"], description: "Use yes only for a clear confirmation of the prepared appointment, no when the patient clearly declines the current appointment, and unknown when intent is unclear." },
+    doctor_confirmed: { type: "string", description: "Doctor name explicitly confirmed during the conversation; empty if not established." },
+    first_visit: { type: "string", enum: ["yes", "no", "unknown"], description: "Whether the patient explicitly says this is their first visit to the clinic." },
+    identity_document_reminder_given: { type: "boolean" },
+    arrive_30_minutes_early: { type: "boolean" },
+    registration_reminder_given: { type: "boolean" },
+    information_form_reminder_given: { type: "boolean" },
+    conversation_completed: { type: "boolean" },
+    appointment_decision: { type: "string", enum: ["confirm", "reschedule", "cancel", "unknown"], description: "Final business outcome of the call." },
+    reschedule_requested: { type: "boolean" },
+    reschedule_completed: { type: "boolean" },
+    new_appointment_date: { type: "string", description: "Selected replacement date in YYYY-MM-DD, or empty when no replacement was booked." },
+    new_appointment_time: { type: "string", description: "Selected replacement time in HH:MM, or empty when no replacement was booked." },
     evidence_summary: { type: "string", minLength: 1 },
-    confidence: {
-      type: "string",
-      enum: ["high", "medium", "low", "unknown"]
-    }
+    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] }
   }
 } as const;

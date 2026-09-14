@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Governed logistics incident voice coordination prototype built with CALL-E",
+  "description": "Governed real-world transaction coordination over CALL-E voice execution",
   "scripts": {
     "demo": "tsx src/cli.ts demo",
     "live": "tsx src/cli.ts live",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@call-e/calle": "^0.2.0",
+    "@call-e/calle": "^0.7.0",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

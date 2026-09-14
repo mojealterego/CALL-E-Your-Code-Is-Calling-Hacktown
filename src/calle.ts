@@ -2,6 +2,7 @@ import { CalleClient } from "@call-e/calle";
 import type { CallCapability } from "./capability.js";
 import type { CallOutcome, Incident } from "./domain.js";
 import { APPOINTMENT_RESULT_SCHEMA, RESULT_SCHEMA } from "./domain.js";
+import { buildConversationContract } from "./assurance.js";
 import { validateOutcome } from "./validation.js";
 
 export type CalleCallStatus = "queued" | "in_progress" | "completed" | "failed" | "canceled" | "unknown";
@@ -42,10 +43,12 @@ export async function executeWithCalle(
   const locale = incident.locale ?? process.env.CALLE_LOCALE ?? "en-US";
   const appointment = incident.appointment;
   const isAppointmentCall = appointment !== undefined;
+  const conversationContract = isAppointmentCall ? buildConversationContract(appointment.patientName) : undefined;
 
   const task = isAppointmentCall
     ? [
         "Conduct a natural, short Polish phone call as a courteous clinic receptionist. The conversation must sound like a real human receptionist, not a survey, IVR, checklist, scripted questionnaire, or technical agent.",
+        `Conversation contract version=${conversationContract?.version ?? 1} digest=${conversationContract?.digest ?? "none"}. Execute only within this contract; the digest binds this call to the prepared identity, objective, allowed actions, forbidden actions, conditional evidence and commit conditions.`,
         `Clinic: ${appointment.clinicName}`,
         `Patient: ${appointment.patientName}`,
         `Doctor: ${appointment.doctorName}`,
@@ -92,6 +95,7 @@ export async function executeWithCalle(
       aegisfleet_capability_constraints_digest: capability.constraintsDigest,
       aegisfleet_capability_endpoint_digest: capability.endpointDigest,
       aegisfleet_capability_expires_at: capability.expiresAt,
+      ...(conversationContract ? { aegisfleet_conversation_contract_version: String(conversationContract.version), aegisfleet_conversation_contract_digest: conversationContract.digest } : {}),
     },
   }, { idempotencyKey: providerIdempotencyKey });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BitemporalMemoryStore } from "../src/bitemporal-memory.js";
-import { reflectOnExecution, storeReflexionFinding } from "../src/reflexion.js";
+import { reflectOnExecution, storeReflexionFinding, type ReflexionFinding } from "../src/reflexion.js";
 import type { Incident, CallOutcome } from "../src/domain.js";
 
 const incident: Incident = {
@@ -32,7 +32,7 @@ describe("reflexion", () => {
   });
 
   it("stores retrospective findings in episodic bitemporal memory", () => {
-    const store = new BitemporalMemoryStore();
+    const store = new BitemporalMemoryStore<ReflexionFinding>();
     const finding = reflectOnExecution(incident, "op-reflect", {
       state: "resolved",
       outcome,

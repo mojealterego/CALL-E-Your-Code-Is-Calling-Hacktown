@@ -88,6 +88,16 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
   if (evidence.doctorConfirmed !== transaction.constraints.doctorName) reasons.push("confirmed doctor does not match prepared appointment");
   if (evidence.conversationCompleted !== true) reasons.push("conversation was not cleanly completed");
 
+  const firstVisitFields = [
+    evidence.identityDocumentReminderGiven,
+    evidence.arrive30MinutesEarly,
+    evidence.registrationReminderGiven,
+    evidence.informationFormReminderGiven,
+  ];
+  if (evidence.patientConfirmed !== "yes" && firstVisitFields.some((field) => field === true)) reasons.push("first-visit instructions were reported before positive patient identity confirmation");
+  if (evidence.firstVisit === "no" && firstVisitFields.some((field) => field === true)) reasons.push("first-visit instructions were reported for a non-first visit");
+  if (evidence.firstVisit === "yes" && firstVisitFields.some((field) => field !== true)) reasons.push("first-visit administrative instructions are incomplete");
+
   if (evidence.appointmentDecision === "cancel") {
     if (reasons.length === 0) return { decision: "abort", reasons: ["patient explicitly declined the appointment"] };
     return { decision: "recover", reasons };
@@ -104,10 +114,6 @@ export function reconcileAppointmentTransaction(transaction: PreparedAppointment
 
   if (evidence.appointmentDecision !== "confirm") reasons.push("appointment decision is unknown");
   if (evidence.appointmentConfirmed !== "yes") reasons.push("patient did not positively confirm the appointment");
-  if (evidence.firstVisit === "yes" && evidence.identityDocumentReminderGiven !== true) reasons.push("first-visit identity document reminder was not given");
-  if (evidence.firstVisit === "yes" && evidence.arrive30MinutesEarly !== true) reasons.push("first-visit 30-minute early-arrival instruction was not given");
-  if (evidence.firstVisit === "yes" && evidence.registrationReminderGiven !== true) reasons.push("first-visit registration instruction was not given");
-  if (evidence.firstVisit === "yes" && evidence.informationFormReminderGiven !== true) reasons.push("first-visit information-form instruction was not given");
   if (evidence.firstVisit === "unknown") reasons.push("first-visit status is unknown");
 
   const incomplete = evidence.providerStatus !== "completed"

@@ -1,90 +1,98 @@
 # Advanced Cognitive Capability Matrix
 
-This matrix records the requested concepts and the bounded implementation status in AegisFleet. Research names are used as architectural references, not as claims of reproducing proprietary models or papers.
+This matrix records the requested concepts and their bounded implementation status in AegisFleet. Research names are architectural references, not claims of reproducing proprietary models or papers.
 
 | Requested capability | Bounded implementation |
 |---|---|
 | Bitemporal store / bitemporal | `src/bitemporal-memory.ts` |
 | Bitemporal graph memory | `BitemporalGraphMemory` |
-| CoALA / CoALA memory | `CoALAMemoryController` with working, episodic, procedural and semantic layers |
-| G-memory | `GMemory` graph nodes/edges |
-| Holographic memory / HDC | `HolographicMemory` plus `hdcEncode` / `hdcSimilarity` |
+| CoALA / CoALA memory | `CoALAMemoryController` |
+| G-memory | `GMemory` |
+| Holographic memory / HDC | `HolographicMemory` + `hdcEncode` / `hdcSimilarity` |
 | Shimi index | `ShimiIndex` |
 | MCP gateway | `McpGateway` scoped capability registry |
-| AlphaEvolve | `alphaEvolve` gated candidate generation |
-| DGM engine / DGM | digital genotype + mutation engine + gated evolution candidate |
-| Digital genotype | `digitalGenotype` / `Genotype` |
-| Mutation loop / Mutation Engine | `mutationEngine` / `mutationLoop` |
-| RSI | explicit `RSIStage` pipeline with rollback |
-| R2 reasoning | bounded `r2Reasoning` |
-| R3 Titans reasoning | bounded `r3TitansReasoning` |
-| Reasoning | deterministic premise aggregation/scoring primitives |
-| Reflexion loop | `src/reflexion.ts` and orchestrator integration |
-| SNN — spiking neural networks | Rust LIF implementation in `rust/snn-zenoh/src/lib.rs`, explicit spike events and fail-closed 1 ms budget status |
-| SNN TypeScript boundary | `snnEncode` remains the deterministic control-plane representation; Rust owns the low-latency neuronal fast path |
-| Zenoh | Optional Rust `zenoh` 1.x transport feature with `publish_frame`; transport is isolated from policy authority |
-| 1 ms latency target | Rust `DEFAULT_BUDGET = 1 ms`; each frame reports measured elapsed time and budget compliance. This is a target/gate, not a hardware/network guarantee |
-| Decision / Decision Cycle | `decisionCycle` and `DecisionOption` controls |
+| AlphaEvolve / DGM | gated genotype/candidate evolution |
+| Digital genotype / mutation engine / mutation loop | `Genotype`, `digitalGenotype`, `mutationEngine`, `mutationLoop` |
+| RSI | explicit stage pipeline with rollback |
+| R2 / R3 Titans / reasoning | bounded deterministic premise composition and scoring |
+| Reflexion loop | `src/reflexion.ts` + orchestrator integration |
+| SNN | Rust LIF SNN in `rust/snn-zenoh`, explicit spikes + measured 1 ms budget status |
+| Zenoh | optional Rust Zenoh 1.x transport; isolated from policy authority |
+| 1 ms latency target | explicit 1,000 µs budget gate/measurement; no universal hardware/network guarantee |
+| Decision / Decision Cycle / AB-MCTS | bounded decision metrics and selectors |
 | GoT / Graph of Thought | `GraphOfThought` |
-| JEPA | `jepaPredict` bounded predictive-state proxy |
-| Adversarial gating | `adversarialGate` and synthetic red team |
-| CEV engine | `CEV` constitutional evaluation |
-| GCP | `GovernedCognitivePlane` policy boundary |
-| Gödel guard | `godelGuard` invariant checker |
+| JEPA | bounded predictive-state proxy `jepaPredict` |
+| Adversarial gating / synthetic red team | `adversarialGate` + `src/red-team.ts` |
+| CEV / constitutional refusal | constitutional predicates and fail-closed result |
+| GCP | `GovernedCognitivePlane` |
+| Gödel / ImandraX / SEGPA | deterministic invariant guards; ImandraX boundary is replaceable adapter, not proprietary reimplementation |
 | OESI | evidence/confidence/contradiction gate |
-| SEGPA | formal invariant gate alias |
-| Synthetic red team | `src/red-team.ts` |
-| RAG 2.0 | `RAG2` retrieve + temporal weighting + grounding |
-| ImandraX-style formal gate | `src/imandrax-mars.ts`: deterministic proof-request boundary + local fail-closed invariant gate; replaceable with an authorized ImandraX integration |
-| MARS | `MARSController` / `marsCycle`: one bounded metacognitive reflection cycle producing principle/procedural refinements without source mutation |
-| Episodic memory | bitemporal Reflexion findings + CoALA episodic layer |
-| Working memory | `WorkingMemory` bounded capacity + TTL |
-| Long-term memory | bitemporal episodic/procedural/semantic storage abstractions |
-| Procedural memory | `ProceduralMemoryStore` |
-| Retrospective Correction | `retrospectiveCorrection` |
-| Point-in-time recovery | `pointInTimeRecovery` + bitemporal stores |
-| Counterfactual reasoning / causal inference | `CounterfactualGraph` and `counterfactualScore` |
-| Cognitive Modulation | `cognitiveModulation` and `DigitalNexusCore.modulate` |
-| Digital Nexus Core | `DigitalNexusCore` introspection/state boundary |
-| Agent Devel | `agentDevel` gated development result |
-| Self Correction | `safeSelfCorrection` |
-| AB-MCTS | bounded `abMcts` decision selection |
-| Offline replay / digital sleep | `offlineReplay` / `digitalSleep` |
-| Synaptic pruning | `synapticPrune` |
-| Meta-learning / curriculum | `curriculumDifficulty` |
-| Temporal decay | `temporalKnowledgeWeight` and existing `temporalDecay` |
-| Anti-reward hacking | `antiRewardHacking` |
-| Neurosymbolic integration | formal/constitutional gate composition |
-| Recursive state representation | `DigitalNexusCore.introspect` |
-| Semantic caching | `semanticCacheKey` |
-| Cross-examination | adversarial gate interface; provider-independent |
-| Constitutional refusal | `constitutionalEvaluate` |
-| Resource donation | `resourceDonate` |
-| Token pruning / prompt compression | `promptPrune` and existing `compressPrompt` |
-| Hard-negative mining | `hardNegativeMining` and existing `hardNegatives` |
-| Multimodal fusion boundary | `modalitySwitch` |
-| Adaptive load shedding | `dynamicLoadShedding` and existing `shedLoad` |
-| Zero-shot adaptation | provider/model-neutral interfaces; no hidden weight mutation |
-| Cross-system handshakes | `crossSystemHandshake` |
-| Chaos engineering | deterministic `chaosScenario` planning primitive; no destructive production execution |
-| Vector topology | HDC/semantic-index abstractions |
-| Automated firewalling | policy/adversarial gate boundary; no deceptive external behavior |
-| Pareto optimization | `paretoSelect` and existing `paretoFront` |
-| Infinite-horizon planning | bounded decision search; no unbounded simulation |
-| Controlled noise | bounded deterministic noise adapter; no stochastic production mutation |
-| Legacy bridging | provider-neutral adapter boundary |
-| Pre-trained retention | bounded retention contract; no model weight training in this repo |
-| Offline fallback | deterministic local demo and provider boundary |
-| A/B testing | `abTest` |
-| Graceful degradation of trust | `trustGate` + existing trust adjustment |
-| Few-shot tool generation | non-executable plan representation only |
-| Meta-architecture generation | bounded genotype/candidate representation only |
-| Schema alignment | `schemaAlign` |
-| Dynamic modality switching | `modalitySwitch` |
-| Data-driven decisions | `DecisionOption`, metrics and bounded selectors |
-| Negotiation / conflict resolution | bounded decision/transaction control layer; no unconstrained negotiation authority |
-| DeepMind / DeepMind research concepts | research references only; no claim of proprietary DeepMind implementation |
+| RAG 2.0 | temporal-weighted retrieval + grounding |
+| MARS | one bounded metacognitive reflection cycle; no source/policy/secret mutation |
+| Episodic / working / long-term / procedural memory | bitemporal stores + CoALA layers + procedural store |
+| Retrospective correction / point-in-time recovery | deterministic correction and temporal recovery functions |
+| Counterfactual reasoning / causal inference | `CounterfactualGraph` + `counterfactualScore` |
+| Cognitive Modulation / Digital Nexus Core | bounded state introspection/modulation |
+| Agent Devel / self-correction | gated development result + safe RSI transition |
+| Offline replay / digital sleep / synaptic pruning | bounded replay, ranking and activity pruning |
+| Meta-learning / curriculum | deterministic curriculum difficulty adjustment |
+| Temporal decay / semantic caching | temporal weights + normalized cache keys |
+| Anti-reward hacking | reward minus cost/risk penalty |
+| Neurosymbolic integration | composition of symbolic invariants and policy gates |
+| Recursive state representation | defensive Digital Nexus snapshots |
+| Resource donation / adaptive load shedding | bounded capacity allocation and priority selection |
+| Token pruning / prompt compression | bounded unique-token selection |
+| Hard-negative mining | loss-ranked examples |
+| Multimodal fusion / dynamic modality switching | score fusion + explicit available-modality selection |
+| Zero-shot domain adaptation | domain/safety contract with `weightsChanged:false` |
+| Cross-system handshakes | capability compatibility check |
+| Chaos engineering | non-destructive deterministic failure planning |
+| Vector topology / HNSW-style candidates | HDC + bounded candidate index abstractions |
+| Automated firewalling / zero trust | deny-pattern gate + authentication/scope/risk gate |
+| Pareto optimization | latency/cost/error-rate Pareto selection |
+| Infinite-horizon planning | explicitly bounded horizon |
+| Controlled noise | deterministic bounded perturbation |
+| Legacy bridging | provider-neutral legacy adapter |
+| Pre-trained concept retention | retention contract; no model weight training |
+| Offline fallback | deterministic local fallback |
+| A/B testing / shadow deployment | `abTest` + `shadowCompare` |
+| Graceful degradation of trust | trust adjustment + threshold gate |
+| Few-shot tool generation | non-executable tool plan only |
+| Meta-architecture generation | bounded candidate representation only |
+| Schema alignment | alias-based normalized mapping |
+| Negotiation / BATNA / TCO | scored negotiation options, explicit BATNA and TCO aggregation |
+| Data-driven decisions | metric-based comparison, A/B and TCO contracts |
+| Conflict resolution / post-mortem | scored conflict choice + blame-free process-gap record |
+| Emotional intelligence | human-fallback and blame-free escalation contracts; no simulated human emotions |
+| Critical thinking | cross-examination, drift, firewall and adversarial gates |
+| Delegation / teamwork | API contract validation + deduplicated squad roles |
+| Adaptability / tech radar | ranked provider-neutral alternatives |
+| Context-window optimization | recent-turn retention + bounded older-context summary |
+| Strict input validation | required-field gate returning exact missing fields |
+| Backoff / rate-limit resilience | bounded exponential backoff with jitter |
+| RLAIF / memory consolidation | failure-memory store + preference penalty boundary |
+| Asynchronous concurrency | bounded async batch partitioning |
+| Latency budgeting | timeout/partial-result decision contracts |
+| Creativity / exploration | bounded deterministic noise + epsilon exploration |
+| Anomaly detection / concept drift | cosine similarity primitive + drift threshold |
+| Predictive fetching / pre-computation | bounded candidate prefetch |
+| Zero-trust sandboxing | authorization gate; generated tools remain non-executable |
+| Global reward optimization | explicit reward/cost/risk objective; no unrestricted self-optimization |
+| Model distillation / parameter sync | distillation-gap metric; no hidden weight synchronization |
+| Service mesh / discovery | `ServiceRegistry` capability discovery |
+| Long-polling / webhooks | job state + replay-safe event-id handler |
+| Confidence / human fallback | threshold-based human routing |
+| Gradient/weight penalization / DPO boundary | preference penalty signal; no autonomous weight mutation |
+| Heuristic intuition | fast-path spam threshold |
+| Schema enforcement / structured output | existing closed outcome schema + strict validation |
+| Graceful degradation / load shedding | priority-based bounded shedding and local fallback |
+| Fuzzy clarification | deterministic exact/substring clarification |
+| Multi-step DAG planning | dependency-respecting topological plan |
+| Semantic clustering / routing | semantic/HDC index abstractions and bounded candidate selection |
+| Reasoning audit | formal/adversarial/constitutional gates; private chain-of-thought is not exposed or treated as proof |
+| Global knowledge graph | G-memory / bitemporal graph abstractions |
+| DeepMind research concepts | bounded architectural references only; no proprietary implementation claim |
 
 ## Safety boundary
 
-The evolutionary stack, Rust SNN fast path and MARS/formal reasoning layer cannot authorize a live phone transaction. SNN output is a signal, Zenoh is transport, MARS is reflection, and ImandraX-style verification is a proof/gate boundary. The authoritative incident policy, evidence, confidence and idempotency controls remain the final operational authority.
+The evolutionary stack, Rust SNN fast path, Zenoh transport, MARS and formal adapters cannot authorize a live phone transaction. SNN is a signal layer; Zenoh is transport; MARS is reflection; ImandraX-style verification is a proof/gate boundary. The authoritative incident policy, evidence, confidence and idempotency controls remain final operational authority. No requested capability grants arbitrary source mutation, credential mutation, policy mutation or unrestricted live execution.

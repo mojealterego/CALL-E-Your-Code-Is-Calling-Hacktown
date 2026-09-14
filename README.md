@@ -38,7 +38,7 @@ The ledger intentionally separates **DESIGN RECOVERED**, **IMPLEMENTED**, **RUNT
 
 Full mapping: `docs/meta-architect-34-69.md`. Dedicated regression suite: `tests/meta-architect-34-69.test.ts`.
 
-### ASI Transcendence capabilities 70–88
+### Transcendence capabilities 70–88
 
 `src/asi-transcendence-stack.ts` adds bounded contracts for Active Inference/Free Energy, TDA concept-manifold analysis, Gödelian gating, polysemantic feature attribution, semantic relation propagation, fractal swarm instantiation, autopoietic boundaries, cross-modal transfer, ZK-style commitment verification, ontological annealing, anticipatory future-memory records, HDC/VSA binding/bundling, QASM compilation boundaries, causal-emergence macro-agents, nested world simulation, hardware-target IR, NARS belief ranking, CEV predicates and temporal inversion correction.
 

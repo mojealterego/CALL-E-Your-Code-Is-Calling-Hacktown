@@ -8,7 +8,7 @@ import { prepareAppointmentTransaction, prepareTransaction, reconcileAppointment
 import { createTransactionReceipt } from "./receipt.js";
 import { createCallCapability } from "./capability.js";
 import { buildAssuranceContext, formalGate } from "./assurance.js";
-import { assuranceHomeostasis, buildSystemStateManifest, challengeDecision, counterfactualCheck, createEvolutionCandidate, type FailureEvent } from "./evolution.js";
+import { assuranceHomeostasis, authorizationFromTrust, buildSystemStateManifest, challengeDecision, classifyFailure, counterfactualCheck, createEvolutionCandidate, degradeTrust, evaluateFreshness, providerHandshake, type FailureEvent, type TrustLevel } from "./evolution.js";
 
 function failureOutcome(message: string) { return validateOutcome({ route: "", route_acceptance: "unknown", eta_update_time: "", escalation_needed: "urgent", evidence_summary: message, confidence: "unknown" }); }
 
@@ -29,6 +29,12 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
     ? prepareAppointmentTransaction({ transactionId: `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, constraints: appointment })
     : prepareTransaction({ transactionId: `TX-${incident.id}`, incidentId: incident.id, participantId: incident.vehicleId, route: incident.proposedRoute, maxEta: incident.maxEta });
   ledger.transition(operationKey, "prepared", { transactionId: transaction.transactionId });
+  const handshake = providerHandshake({ provider: "CALL-E", schemaVersion: "v1", capabilities: ["goal-driven-voice", "structured-result"], supportedOperations: ["call", "get"], verificationSemantics: "authoritative-readback", idempotency: "supported", limitsKnown: true });
+  if (!handshake.accepted) {
+    const reasons = [`provider handshake rejected: ${handshake.reasons.join("; ")}`];
+    const record = ledger.transition(operationKey, "recovering", { outcome: failureOutcome(reasons[0] ?? "Provider handshake rejected"), transactionDecision: "recover", transactionReasons: reasons });
+    return { record, reused: false, outcome: record.outcome };
+  }
   const capability = createCallCapability({ operationKey, participantId: incident.vehicleId, endpoint: incident.phone, scope: isAppointment ? "appointment_confirmation" : "route_change", constraints: transaction.constraints });
   ledger.transition(operationKey, "calling", { capabilityId: capability.capabilityId });
   try {
@@ -48,19 +54,21 @@ export async function runIncident(incident: Incident, options: { live: boolean; 
     let finalReasons = reconciliation.reasons;
     const contradiction = assurance?.thoughts.some((thought) => thought.contradicts.length > 0) ?? false;
     const evidenceItems = outcome.evidence ?? (outcome.evidence_summary ? [outcome.evidence_summary] : []);
-    const counterfactuals = counterfactualCheck({ decision: finalDecision, identityVerified: isAppointment ? outcome.patient_confirmed === "yes" : true, authoritativeCompleted: raw.status === "completed", evidencePresent: evidenceItems.length > 0, selectedSlotPrepared: !isAppointment || outcome.appointment_decision !== "reschedule" || appointment.availableSlots.some((slot) => slot.date === outcome.new_appointment_date && slot.time === outcome.new_appointment_time), contradiction });
+    const selectedSlotPrepared = !isAppointment || outcome.appointment_decision !== "reschedule" || appointment.availableSlots.some((slot) => slot.date === outcome.new_appointment_date && slot.time === outcome.new_appointment_time);
+    const counterfactuals = counterfactualCheck({ decision: finalDecision, identityVerified: isAppointment ? outcome.patient_confirmed === "yes" : true, authoritativeCompleted: raw.status === "completed", evidencePresent: evidenceItems.length > 0, selectedSlotPrepared, contradiction });
     const challenger = challengeDecision({ decision: finalDecision, identityVerified: isAppointment ? outcome.patient_confirmed === "yes" : true, authoritativeCompleted: raw.status === "completed", evidencePresent: evidenceItems.length > 0, contradiction });
-    if (finalDecision === "commit" && !challenger.passed) {
-      finalDecision = "recover";
-      finalReasons = [...finalReasons, `challenger blocked commit: ${challenger.objections.join("; ")}`];
-    }
+    if (finalDecision === "commit" && !challenger.passed) { finalDecision = "recover"; finalReasons = [...finalReasons, `challenger blocked commit: ${challenger.objections.join("; ")}`]; }
     if (isAppointment && finalDecision === "commit") {
-      const formal = formalGate({ decision: finalDecision, patientConfirmed: outcome.patient_confirmed, appointmentDecision: outcome.appointment_decision, providerStatus: raw.status, taskCompleted: outcome.task_completed, conversationCompleted: outcome.conversation_completed, evidenceItems: outcome.evidence, selectedSlotPrepared: outcome.appointment_decision === "reschedule" ? appointment.availableSlots.some((slot) => slot.date === outcome.new_appointment_date && slot.time === outcome.new_appointment_time) : true, contradiction });
+      const formal = formalGate({ decision: finalDecision, patientConfirmed: outcome.patient_confirmed, appointmentDecision: outcome.appointment_decision, providerStatus: raw.status, taskCompleted: outcome.task_completed, conversationCompleted: outcome.conversation_completed, evidenceItems: outcome.evidence, selectedSlotPrepared, contradiction });
       if (!formal.allowed) { finalDecision = "recover"; finalReasons = [...finalReasons, `formal assurance gate blocked commit: ${formal.violations.join(", ")}`]; }
     }
-    const evolutionFailures: FailureEvent[] = finalDecision === "recover" ? [{ id: `failure_${transaction.transactionId}`, category: contradiction ? "contradiction" : "verification", summary: finalReasons.join("; "), occurredAt: new Date().toISOString(), transactionId: transaction.transactionId }] : [];
-    const evolution = createEvolutionCandidate({ hypothesis: finalDecision === "recover" ? "Improve the failing verification path before another execution." : "Preserve the current verified transaction path.", failures: evolutionFailures, counterfactuals, challenger, });
-    const manifest = buildSystemStateManifest({ version: "evolution-v1", provider: "CALL-E", capabilities: [capability.scope], authorizationScope: [capability.scope], policyVersion: "transaction-policy-v1", knownFailures: evolutionFailures.map((failure) => failure.id), assuranceMode: assuranceHomeostasis({ failureRate: finalDecision === "recover" ? 1 : 0, unknownRate: outcome.confidence === "unknown" ? 1 : 0, recoveryRate: finalDecision === "recover" ? 1 : 0, contradictionRate: contradiction ? 1 : 0, providerErrorRate: raw.status === "completed" ? 0 : 1, verificationFailureRate: challenger.passed ? 0 : 1, duplicateExecutionAttempts: 0, latencyMs: 0, confidenceDegradation: outcome.confidence === "low" ? 1 : 0 }), verificationState: finalDecision === "commit" ? "verified" : "unverified", constraints: ["capability-scoped", "authoritative-readback", "unknown-is-recovery", ...(isAppointment ? ["prepared-slots-only"] : [])], promotionState: evolution.promotion === "candidate" ? "candidate" : "baseline" });
+    const failureCategory = classifyFailure({ unknown: finalDecision === "recover" && outcome.confidence === "unknown", contradiction, providerError: raw.status !== "completed", verificationFailure: finalDecision === "recover", duplicate: false });
+    const evolutionFailures: FailureEvent[] = finalDecision === "recover" ? [{ id: `failure_${transaction.transactionId}`, category: failureCategory, summary: finalReasons.join("; "), occurredAt: new Date().toISOString(), transactionId: transaction.transactionId }] : [];
+    const evolution = createEvolutionCandidate({ hypothesis: finalDecision === "recover" ? "Improve the failing verification path before another execution." : "Preserve the current verified transaction path.", failures: evolutionFailures, counterfactuals, challenger });
+    const trustLevel: TrustLevel = finalDecision === "commit" ? "trusted" : degradeTrust("trusted", failureCategory);
+    const authorizationDecision = authorizationFromTrust(trustLevel, true);
+    const freshness = evaluateFreshness(new Date().toISOString(), new Date(), 5 * 60_000);
+    const manifest = buildSystemStateManifest({ version: "evolution-v1", provider: "CALL-E", capabilities: [capability.scope], authorizationScope: [capability.scope], policyVersion: "transaction-policy-v1", knownFailures: evolutionFailures.map((failure) => failure.id), assuranceMode: assuranceHomeostasis({ failureRate: finalDecision === "recover" ? 1 : 0, unknownRate: outcome.confidence === "unknown" ? 1 : 0, recoveryRate: finalDecision === "recover" ? 1 : 0, contradictionRate: contradiction ? 1 : 0, providerErrorRate: raw.status === "completed" ? 0 : 1, verificationFailureRate: challenger.passed ? 0 : 1, duplicateExecutionAttempts: 0, latencyMs: 0, confidenceDegradation: outcome.confidence === "low" ? 1 : 0 }), verificationState: finalDecision === "commit" ? "verified" : "unverified", constraints: ["capability-scoped", "authoritative-readback", "unknown-is-recovery", "provider-handshake-required", ...(isAppointment ? ["prepared-slots-only"] : [])], promotionState: evolution.promotion === "candidate" ? "candidate" : "baseline", trustLevel, authorizationDecision, freshnessState: freshness.state });
     const receipt = createTransactionReceipt({ transactionId: transaction.transactionId, transaction: { ...transaction, capability }, evidence: observedEvidence, decision: finalDecision });
     const state = finalDecision === "commit" ? "resolved" : finalDecision === "recover" ? "recovering" : "escalated";
     const record = ledger.transition(operationKey, state, { transactionDecision: finalDecision, transactionReasons: finalReasons, transactionReceipt: receipt });

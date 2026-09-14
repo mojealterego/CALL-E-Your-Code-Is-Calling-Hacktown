@@ -34,10 +34,9 @@ export class AuditLedger {
       && outcome.escalation_needed === "none"
       && Boolean(outcome.evidence_summary.trim())
       && outcome.confidence === "high";
-    return this.transition(operationKey, resolved ? "resolved" : "escalated", {
-      outcome,
-      ...(callId ? { callId } : {}),
-    });
+    const patch: Partial<CallRecord> = { outcome };
+    if (callId !== undefined) patch.callId = callId;
+    return this.transition(operationKey, resolved ? "resolved" : "escalated", patch);
   }
 
   has(operationKey: string): boolean {
@@ -49,9 +48,9 @@ export class AuditLedger {
   }
 
   private commit(record: CallRecord): void {
-    record.previousAuditDigest = this.records.length > 0
-      ? this.records[this.records.length - 1].auditDigest
-      : undefined;
+    const previous = this.records[this.records.length - 1];
+    if (previous?.auditDigest !== undefined) record.previousAuditDigest = previous.auditDigest;
+    else delete record.previousAuditDigest;
     record.auditDigest = this.digest(record);
     if (!this.keys.has(record.operationKey)) this.records.push(record);
     this.keys.set(record.operationKey, record);

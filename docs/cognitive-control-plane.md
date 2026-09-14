@@ -2,56 +2,101 @@
 
 ## EN
 
-AegisFleet does not add autonomous self-modifying behavior to the phone execution path. Instead, selected research ideas are mapped to bounded, testable control-plane components.
+AegisFleet does not put autonomous self-modifying behavior on the phone execution path. Requested cognitive and evolutionary ideas are separated into concrete deterministic control primitives and research-track model integrations.
 
-### Adopted now
+### Implemented bounded primitives
 
-| Concept | AegisFleet implementation | Safety boundary |
+| Requested direction | Concrete implementation | Boundary |
 |---|---|---|
-| Bitemporal store / bitemporal graph memory | `BitemporalMemoryStore` keeps valid time separate from recording time and supports point-in-time reconstruction. | Memory cannot authorize a call by itself. |
-| Working memory | Current incident context remains in the orchestration boundary. | Scoped to one operation. |
-| Episodic memory | Call outcomes and evidence can be stored as time-indexed incident facts. | Evidence remains attributable to an operation. |
-| Procedural memory | Policy and validation rules are deterministic procedures in source control. | No learned procedure is executed implicitly. |
-| Decision Cycle | validate → approve → call → validate outcome → evidence gate → resolve/escalate. | Every transition is explicit. |
-| Reflexion / retrospective correction | Failed or uncertain outcomes become escalation evidence rather than silent self-correction. | No autonomous production mutation. |
-| Adversarial gating | Existing policy, schema and evidence gates act as adversarial barriers before resolution. | Unknown/low-confidence results cannot resolve. |
-| Synthetic red team | Regression tests target invalid inputs, duplicate execution, malformed outcomes and failure paths. | Test-only; no real calls. |
-| Point-in-time recovery | Bitemporal reconstruction permits historical decision-context inspection. | Prototype store is in-memory, not durable enterprise storage. |
+| Bitemporal / bitemporal graph memory | `BitemporalMemoryStore` with valid-time, recording-time and point-in-time reconstruction. | Memory cannot authorize execution. |
+| CoALA-inspired memory separation | Working, episodic and procedural memory categories. | Categories are explicit; no hidden learned policy. |
+| Working memory | `WorkingMemory` with capacity and TTL. | Per-process context only. |
+| Long-term / episodic memory | Bitemporal store and semantic index. | Prototype storage is in-memory. |
+| Procedural memory | Source-controlled policy, validation and decision procedures. | No implicit learned procedure. |
+| Holographic memory / HDC | Deterministic binary hypervector encoder and similarity. | Prototype associative representation, not a trained HDC model. |
+| Shimi index / semantic retrieval | `ShimiIndex`: lexical overlap + HDC similarity + temporal decay. | Deterministic index; no claim of proprietary Shimi implementation. |
+| RAG 2.0 direction | Retrieval layer can combine indexed memory with time decay before a decision. | Retrieval is evidence/context, never authority. |
+| Decision / Decision Cycle | Explicit validate → approve → execute → reconcile → commit/abort/recover. | Policy and evidence remain authoritative. |
+| Reflexion loop | `reflectOnExecution()` stores retrospective findings. | Findings cannot change incident state. |
+| Retrospective correction | Findings encode observation + correction guidance. | Human/policy review required for consequential change. |
+| Adversarial gating | Policy, schema, evidence, contradiction and replay barriers. | Unsafe/unknown states escalate. |
+| Synthetic red team | Deterministic adversarial regression suite. | Test-only; no real calls. |
+| Point-in-time recovery | Bitemporal `asOf(validAt, recordedAt)` reconstruction. | Prototype is not durable enterprise storage. |
+| Counterfactual reasoning | `CounterfactualGraph` removes a node in a copy-like analysis and reports affected consequences. | No production mutation. |
+| MCP gateway | `McpGateway` capability registry with explicit scopes. | No phone execution capability is granted by this module. |
+| Semantic caching | `ShimiIndex` provides deterministic retrieval reuse. | No external cache dependency in prototype. |
+| Temporal decay | Exponential half-life scoring. | Decay is a ranking heuristic, not truth deletion. |
+| Pareto optimization | `paretoFront()` retains non-dominated latency/cost/error candidates. | No single metric can bypass safety gates. |
+| Adaptive load shedding | `shedLoad()` keeps highest-priority work under a bound. | Does not drop safety-critical policy checks. |
+| Prompt compression | Deterministic duplicate/token pruning. | Context optimization only; no semantic authority. |
+| Hard-negative mining | `hardNegatives()` selects highest-loss examples for evaluation. | Evaluation aid, not autonomous weight updates. |
+| Trust regulation | Failure severity reduces a bounded trust score. | Reduced trust cannot itself authorize privileges. |
+| Mutation / DGM / AlphaEvolve / RSI control loop | `evaluateMutation()` plus explicit stage progression: sandbox → red-team → formal-check → benchmark → shadow → approval → release/rollback. | Candidates are data-only; no source overwrite, production access or hot-swap. |
+| Digital Nexus / meta-state | `SystemState` + `introspect()` provide explicit version/capability/error/latency/trust state. | Snapshot only; no self-directed privilege escalation. |
+| Resource donation / load balancing | Priority-based work selection is available as a deterministic resource-control primitive. | Host scheduler owns actual compute allocation. |
+| Graceful degradation of trust | Bounded trust decay on failures. | Does not silently remove safety controls. |
 
-### Research-track, not falsely claimed as implemented
+### Research-track integrations
 
-CoALA, JEPA, HDC/holographic memory, Graph of Thought, R2/R3 reasoning, AlphaEvolve/DGM mutation loops, digital genotype, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV and ImandraX are **architecture research tracks**, not production capabilities of this repository. They should only be promoted to implemented status after a concrete module, test coverage and reproducible evaluation exist.
+The repository does **not** claim to contain the actual learned models or proprietary systems named in the request. CoALA, JEPA, Graph of Thought, R2/R3 reasoning, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM code synthesis, digital genotype, autonomous RSI, AB-MCTS, DeepMind architectures and learned neural-weight mutation remain research tracks. They require real model implementations, dependencies, benchmarks and reproducible evaluation before they can be marked implemented.
 
-The same rule applies to an MCP Gateway: the current CALL-E adapter is deliberately narrow. A future gateway may expose memory, policy and execution tools with capability-scoped authorization, but the phone executor must remain behind the existing policy boundary.
+Likewise, GCP is treated as an infrastructure target rather than an invented local implementation; Gödel-style self-reference is represented only by bounded system-state introspection; CEV remains a policy-research direction; and formal theorem proving is a future adapter boundary rather than a false claim of proof completeness.
 
-### Why this is useful
+### Safe evolutionary protocol
 
-The key addition is not a larger language model. It is **historical decision reconstruction**: an operator can distinguish what was true in the logistics world from what the system knew at the time. That is directly relevant to incident replay, auditability, retrospective correction and point-in-time recovery.
+Any future code-generating evolution engine must follow this non-negotiable sequence:
+
+```text
+OBSERVE
+  → PROFILE
+  → HYPOTHESIS
+  → GENERATE CANDIDATE
+  → AIR-GAPPED SANDBOX
+  → SYNTHETIC RED TEAM
+  → FORMAL / PROPERTY CHECK
+  → BENCHMARK
+  → SHADOW
+  → HUMAN / POLICY APPROVAL
+  → ATOMIC RELEASE
+  → ROLLBACK
+```
+
+No generated candidate may directly modify the production phone executor, secrets, policy rules, audit history or authorization boundaries. Resource cost, latency, correctness and safety must be evaluated together. A faster candidate that weakens a safety invariant is rejected.
 
 ## PL
 
-AegisFleet nie dodaje autonomicznego samomodyfikowania do ścieżki wykonywania połączeń. Wybrane idee badawcze są mapowane na ograniczone i testowalne komponenty warstwy sterowania.
+AegisFleet nie umieszcza autonomicznego samomodyfikowania w ścieżce wykonywania połączeń. Żądane idee kognitywne i ewolucyjne są rozdzielone na konkretne deterministyczne mechanizmy sterowania oraz osobny tor badawczy dla rzeczywistych modeli.
 
-### Dodane teraz
+### Wdrożone ograniczone mechanizmy
 
-| Koncepcja | Implementacja AegisFleet | Granica bezpieczeństwa |
-|---|---|---|
-| Bitemporal store / bitemporal graph memory | `BitemporalMemoryStore` rozdziela czas obowiązywania faktu od czasu jego zapisania i umożliwia rekonstrukcję punktu w czasie. | Pamięć sama nie może autoryzować połączenia. |
-| Working memory | Bieżący kontekst incydentu pozostaje w granicy orkiestratora. | Zakres jednego operation. |
-| Episodic memory | Wyniki połączeń i dowody mogą być przechowywane jako fakty incydentu indeksowane czasowo. | Dowód pozostaje przypisany do operation. |
-| Procedural memory | Reguły polityki i walidacji są deterministycznymi procedurami w repozytorium. | Wyuczona procedura nie jest wykonywana niejawnie. |
-| Decision Cycle | validate → approve → call → validate outcome → evidence gate → resolve/escalate. | Każde przejście jest jawne. |
-| Reflexion / retrospective correction | Wynik błędny lub niepewny staje się podstawą eskalacji zamiast cichej autokorekty. | Brak autonomicznej mutacji produkcji. |
-| Adversarial gating | Istniejące bramki polityki, schematu i dowodów pełnią funkcję barier przed resolution. | `unknown` / niska pewność nie mogą zakończyć incydentu jako resolved. |
-| Synthetic red team | Testy regresyjne obejmują błędne dane, duplikaty, wadliwe wyniki i ścieżki awarii. | Test-only; bez realnych połączeń. |
-| Point-in-time recovery | Rekonstrukcja bitemporalna pozwala odtworzyć historyczny kontekst decyzji. | Obecny store jest in-memory, nie jest trwałym storage enterprise. |
+- `BitemporalMemoryStore`: valid-time + recording-time + point-in-time recovery.
+- Working / episodic / procedural memory.
+- `WorkingMemory`: limit pojemności i TTL.
+- HDC/holographic associative memory jako deterministyczne wektory binarne.
+- Shimi-style semantic index łączący overlap leksykalny, podobieństwo HDC i temporal decay.
+- RAG/retrieval jako warstwa kontekstu, nigdy jako autorytet decyzji.
+- Decision Cycle: validate → approve → execute → reconcile → commit/abort/recover.
+- Reflexion loop + retrospective correction w pamięci epizodycznej.
+- Adversarial gating i synthetic red team.
+- Counterfactual causal graph.
+- Capability-scoped MCP Gateway boundary.
+- Semantic caching, temporal decay, Pareto front, adaptive load shedding, prompt compression i hard-negative mining.
+- Bounded trust regulation i introspekcja `SystemState`.
+- Gated DGM/AlphaEvolve/RSI mutation-evaluation loop bez autonomicznego nadpisywania kodu.
 
-### Tor badawczy — nie deklarujemy tego jako gotowej implementacji
+### Czego celowo nie udajemy
 
-CoALA, JEPA, HDC/holographic memory, Graph of Thought, reasoning R2/R3, pętle mutacji AlphaEvolve/DGM, digital genotype, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV i ImandraX pozostają **torami architektoniczno-badawczymi**, a nie funkcjami produkcyjnymi tego repozytorium. Status „implemented” otrzymają dopiero po utworzeniu konkretnego modułu, testów i powtarzalnej ewaluacji.
+CoALA jako pełnego frameworka uczenia, JEPA, GoT, R2/R3, SNN, SEGPA, OESI, CEV, ImandraX, pełnego AlphaEvolve/DGM, digital genotype, autonomicznego RSI, AB-MCTS, rzeczywistych architektur DeepMind ani uczenia wag neuronowych nie oznaczamy jako zaimplementowanych modeli. Takie oznaczenie wymagałoby konkretnego modelu, testów, zależności i powtarzalnej ewaluacji.
 
-Ta sama zasada dotyczy MCP Gateway. Obecny adapter CALL-E jest celowo wąski. Przyszły gateway może udostępniać pamięć, politykę i narzędzia wykonawcze z autoryzacją opartą na capability, ale executor telefoniczny musi pozostać za istniejącą granicą policy.
+GCP pozostaje celem infrastrukturalnym, Gödel jest reprezentowany jedynie przez ograniczoną introspekcję stanu, a formalne dowodzenie jest przyszłym adapterem. Nie deklarujemy gwarancji matematycznych, których kod nie zapewnia.
 
-### Wartość
+### Bezpieczna pętla ewolucyjna
 
-Najważniejszą zmianą nie jest większy model językowy, lecz **rekonstrukcja decyzji historycznej**: operator może odróżnić to, co było prawdą w świecie logistycznym, od tego, co system wiedział w danym momencie. Jest to bezpośrednio użyteczne dla replay incydentów, audytu, retrospektywnej korekty i point-in-time recovery.
+```text
+OBSERVE → PROFILE → HYPOTHESIS → GENERATE CANDIDATE
+→ AIR-GAPPED SANDBOX → SYNTHETIC RED TEAM
+→ FORMAL / PROPERTY CHECK → BENCHMARK → SHADOW
+→ HUMAN / POLICY APPROVAL → ATOMIC RELEASE → ROLLBACK
+```
+
+Kandydat nie może sam zmienić produkcyjnego executora telefonicznego, sekretów, polityk, historii audytu ani granic autoryzacji. Zmiana, która jest szybsza, ale osłabia safety invariant, jest odrzucana.

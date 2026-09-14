@@ -17,7 +17,7 @@ Transaction: TX-AF-DEMO-0001
 Clinic: Przychodnia Medica Nova
 Patient: Adam Miauczyński
 Doctor: doktor Pawlak
-Current appointment: 2026-09-14 10:00
+Current appointment: 2026-09-15 10:00
 Purpose: appointment confirmation / reschedule / cancellation
 Prepared replacement slots:
   2026-09-15 09:00
@@ -33,9 +33,9 @@ Say:
 
 ## 0:35–1:30 — CALL-E
 
-Run the explicitly configured live path with an authorized test recipient.
+Run the explicitly configured live path with the authorized test recipient.
 
-The agent should conduct a natural Polish receptionist-style conversation. The key point is that it is a branching conversation, not a questionnaire.
+The agent conducts a natural Polish receptionist-style conversation. The key point is that it is a branching conversation, not a questionnaire.
 
 ### Attendance confirmed — first visit
 
@@ -129,23 +129,7 @@ conversation_completed: true
 confidence: high
 ```
 
-For a reschedule, the result additionally records:
-
-```text
-appointment_decision: reschedule
-reschedule_requested: true
-reschedule_completed: true
-new_appointment_date: 2026-09-15
-new_appointment_time: 11:30
-```
-
-For cancellation:
-
-```text
-appointment_decision: cancel
-reschedule_requested: false
-reschedule_completed: false
-```
+For a reschedule, the result additionally records the accepted prepared slot. For cancellation, it records `appointment_decision: cancel` and no replacement slot.
 
 Point out that the spoken conversation is converted into explicit, auditable evidence.
 
@@ -206,7 +190,7 @@ Say:
 
 ## 2:45–3:00 — AUDIT + closing
 
-Show the transaction receipt and hash-linked audit digest.
+Show the transaction receipt, system state manifest, and hash-linked audit digest.
 
 Point to:
 
@@ -216,6 +200,9 @@ Point to:
 - appointment evidence;
 - selected replacement slot, if any;
 - decision;
+- verification state;
+- trust state;
+- freshness state;
 - previous audit digest;
 - current audit digest.
 
@@ -223,9 +210,33 @@ Say:
 
 > "CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change."
 
+## Evolution assurance insert (optional 15-second overlay)
+
+Show:
+
+```text
+FAILURE / DRIFT
+      ↓
+COUNTERFACTUAL
+      ↓
+CHALLENGER
+      ↓
+REPLAY
+      ↓
+SHADOW
+      ↓
+PROMOTION CANDIDATE
+      ↓
+EXPLICIT AUTHORIZATION
+```
+
+Say:
+
+> "A failure does not become a new permission. It becomes a regression case. Improvements must survive replay, challenge and comparison before a human-authorized promotion."
+
 ## Recording safety
 
-- Use only an authorized test recipient.
+- Use only the authorized test recipient.
 - Keep `CALLE_API_KEY` out of the recording and repository.
 - Use `CALL_E_MODE=live` only for the intended live demonstration.
 - The default `npm run demo` path remains provider-free and makes no phone call.

@@ -118,6 +118,17 @@ describe("cognitive assurance fabric", () => {
     expect(result.violations).toContain("disclosure-after-identity-failure");
   });
 
+  it("blocks a retry after an external side effect, enforcing side-effect conservation", () => {
+    const result = evaluateTrajectory([
+      { type: "observation", detail: "CALL-E state is unknown", safe: true },
+      { type: "side_effect", detail: "outbound phone call placed", safe: true },
+      { type: "retry", detail: "attempt another phone call", safe: false },
+    ]);
+    expect(result.safe).toBe(false);
+    expect(result.violations).toContain("retry-after-side-effect");
+    expect(conserveExternalSideEffect("call-existing-001", true)).toEqual({ allowed: false, action: "reconcile_existing" });
+  });
+
   it("allows compound reasoning to raise confidence but forces recovery on disagreement", () => {
     const base = createClaim({ subject: "Adam", predicate: "appointment.decision", value: "confirm", status: "unverified", source: "call-e", evidenceRefs: ["call"], confidence: 0.8, validFrom: "2026-09-14T00:00:00.000Z" });
     const agree = compoundReasoning([{ name: "parser-a", claims: [base] }, { name: "parser-b", claims: [{ ...base, id: "b" }] }]);

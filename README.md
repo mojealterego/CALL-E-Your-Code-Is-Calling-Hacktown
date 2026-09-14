@@ -360,3 +360,48 @@ The feature branch is the submission branch. Every source change must pass both 
 - Enterprise identity/device-attestation adapter.
 - RBAC and organization-level policy configuration.
 - Secrets management and rotation.
+
+## Project Working Rules — IMMUTABLE OPERATING INSTRUCTIONS
+
+These rules are part of the project record and apply to all subsequent work:
+
+1. **User-defined content is authoritative.** Do not rewrite, replace, paraphrase, embellish, shorten, or invent the user's approved dialogue, prompts, scripts, names, facts, constraints, or project decisions.
+2. **No autonomous substitutions.** Do not change project behavior "for convenience", "for a better demo", or based on the assistant's own preference. Any substantive change must be explicitly requested or required to fix a demonstrable defect, and the original intent must be preserved.
+3. **Approved CALL-E conversation is locked.** The Polish appointment conversation supplied and approved by the user is the canonical script. Do not substitute a new receptionist script.
+4. **Work must be recorded.** At the end of every substantive work session, update this README with: date/time, exact work completed, files changed, commit SHA(s), tests/verification performed, workflow/run IDs when relevant, failures and their exact causes, current state, and the next concrete action.
+5. **No false completion.** Never state that a call, test, workflow, deployment, merge, recording, or other external action succeeded unless the repository/provider evidence confirms it.
+6. **Live-call sequence.** First verify that the live call works. Only after a successful real call and verification should the final demo recording be made.
+7. **Demo separation.** `npm run demo` remains the deterministic local dry-run. It must not be represented as a real phone call.
+8. **Do not waste live attempts.** A real CALL-E call is consequential and must only be initiated through the explicit user-authorized workflow.
+
+## Work Log / Session History
+
+### 2026-09-14 — CALL-E live verification and demo preparation
+
+- Investigated a green CI run that did not call anyone. Confirmed that ordinary CI runs `npm test`, `npm run typecheck`, and `npm run demo`; the demo is deliberately provider-free and reports `callsPlaced: 0`.
+- Investigated the manual live workflow. A previous live workflow run failed during its authorization step before checkout/execution; therefore no call was placed in that run.
+- Updated the main live workflow authorization from an ambiguous string-based confirmation to an explicit `choice` input containing only `I AUTHORIZE ONE TEST CALL`.
+- Configured the controlled live workflow to test `feat/voice-transaction-core-v5`, use Node 22, production CALL-E endpoint, `PL` / `pl-PL`, unique `AEGIS_LIVE_TEST_ID=${{ github.run_id }}`, secret validation, tests/typecheck, and a provider authentication preflight before `npm run live`.
+- Added hard CLI gates: live execution fails if no CALL-E `callId` is returned or if the resulting transaction is not `resolved`; unresolved/no-call results cannot produce a green live workflow.
+- Corrected live idempotency handling so each authorized workflow run has a unique operation key and cannot accidentally reuse a previous real call as a new test.
+- Confirmed the canonical appointment data in the implementation: Przychodnia Medica Nova; Adam Miauczyński; doktor Pawlak; appointment `2026-09-15 10:00`; prepared replacement slots are `2026-09-15 09:00`, `2026-09-15 11:30`, `2026-09-16 08:30`, `2026-09-16 13:00`, `2026-09-17 10:30`.
+- Confirmed `src/calle.ts` still contains the approved natural Polish receptionist flow, including the identity gate, first-visit conditional instructions, the approved question `Czy jest coś, w czym jeszcze mogę pomóc? Ma pan jakieś pytania?`, natural confirmation close, cancellation behavior, prepared-slot-only rescheduling, and no-invention rules.
+- A later live workflow run reached `npm run live` and CALL-E returned: `Insufficient CALL-E balance. Please top up ... and try again.` The application correctly produced `state: recovering`, `decision: recover`, `liveStatus: no_call`, and `callsPlaced: 0`, then exited with code 1. **No phone call occurred in that run.**
+- The user subsequently replaced `CALLE_API_KEY` in GitHub Secrets with a new key. This is user-confirmed; the secret value itself is intentionally not recorded in the repository.
+- The immediate objective is now: **verify one real live call with the new key; if and only if it works, record the final demo.** Do not record the final demo before this verification succeeds.
+
+### Recorded commits / workflow changes
+
+- Feature branch work includes the live execution/idempotency and safety-gate changes leading into the submission branch.
+- Main live workflow authorization fix: `4e9ff60ccd3d285d9aebe4e13654907d96bc5ea6`.
+- README/demo runbook documentation commit: `2142b5050d036546fbb5debf619c8d81f47c3acd`.
+- This work-log and immutable-rules update is the current README commit.
+
+### Current state at time of this entry
+
+- Submission branch: `feat/voice-transaction-core-v5`.
+- Final demo recording: **NOT YET RECORDED**.
+- Real call after the new API key: **NOT YET VERIFIED**.
+- Last attempted live call: **NO CALL — CALL-E reported insufficient balance**.
+- Approved receptionist dialogue: **LOCKED; do not alter without explicit user instruction.**
+- Next action: run the explicit live workflow test and inspect the actual CALL-E `callId`, terminal status, conversation evidence, and AegisFleet reconciliation before recording anything.

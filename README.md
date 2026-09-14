@@ -26,6 +26,10 @@ evidence + confidence gate
   └── escalated → human action
   ↓
 audit ledger
+  ↓
+reflexion / retrospective finding
+  ↓
+bitemporal episodic memory
 ```
 
 ## Implemented
@@ -42,12 +46,14 @@ audit ledger
 - Hash-linked audit records for tamper-evident sequencing inside the prototype ledger.
 - Bitemporal decision memory with valid-time / recording-time separation and point-in-time reconstruction.
 - **Decision Intelligence layer:** deterministic assessment of policy, evidence, confidence, latency and cost, plus bounded baseline-versus-candidate comparison for shadow evaluation.
+- **Bounded Reflexion layer:** converts policy, execution, validation and uncertain outcomes into explicit retrospective findings and correction guidance; findings are always marked `safeToAutoResolve: false`.
+- **Deterministic Synthetic Red-Team harness:** adversarial cases cover policy rejection, missing evidence, low confidence, malformed outcomes, duplicate operations, budget breaches, contradictory outcomes and replayed events. Every case must preserve escalation safety.
 - Automated regression tests and GitHub Actions CI.
 - Grant proposal, architecture, security model and judge-ready three-minute demo script.
 
 ## Cognitive control plane
 
-The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. Candidate changes can be compared with a baseline without allowing performance metrics to bypass safety gates.
+The repository now includes a bounded cognitive architecture rather than a collection of unverified AI buzzwords. `BitemporalMemoryStore` provides working/episodic/procedural memory categories and point-in-time reconstruction. `assessDecision()` provides an explicit decision boundary around policy, evidence, confidence and operational metrics. `reflectOnExecution()` produces retrospective findings without granting them authority to resolve an incident. `runSyntheticRedTeam()` exercises adversarial safety invariants deterministically.
 
 See [`docs/cognitive-control-plane.md`](docs/cognitive-control-plane.md) for the bilingual architecture mapping. CoALA, JEPA, HDC/holographic memory, Graph of Thought, R2/R3 reasoning, AlphaEvolve/DGM mutation loops, RSI, AB-MCTS, SNN, SEGPA, OESI, CEV, ImandraX and an MCP Gateway are explicitly treated as research-track extensions until they have concrete implementations and reproducible evaluation. The project does not claim capabilities that are not present in code.
 
@@ -118,6 +124,8 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   ├── ledger.ts
 │   ├── orchestrator.ts
 │   ├── policy.ts
+│   ├── red-team.ts
+│   ├── reflexion.ts
 │   ├── simulator.ts
 │   ├── validation.ts
 │   └── webhook.ts
@@ -127,13 +135,14 @@ See [`docs/demo-script.md`](docs/demo-script.md). The intended recording is unde
 │   ├── ledger.test.ts
 │   ├── orchestrator.test.ts
 │   ├── policy.test.ts
+│   ├── red-team.test.ts
+│   ├── reflexion.test.ts
 │   └── validation.test.ts
 ├── .env.example
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
-```
 
 ## CALL-E integration note
 
@@ -157,7 +166,7 @@ The prototype intentionally isolates the remaining enterprise work:
 - retention/deletion policies and jurisdiction-specific privacy controls;
 - operator console and global kill switch;
 - TMS/ERP write-back connectors;
-- load, fault-injection and red-team evaluation;
+- load, fault-injection and red-team evaluation at scale;
 - durable bitemporal storage and indexed bitemporal graph queries;
 - evaluated reasoning/memory models behind capability-scoped interfaces rather than directly in the phone executor.
 

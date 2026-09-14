@@ -3,10 +3,10 @@
 ## Verified in repository
 
 - [x] TypeScript project builds with `npm run typecheck`.
-- [x] Automated test suite passes in GitHub Actions on the latest verified `main` head (`3ec1221f7a964436b7eebdaf0510bed96de79b45`).
+- [x] Automated test suite passes in GitHub Actions on the latest verified `main` head (`05a286a7d33df136c60a35a78326c62ee9d09b2b`).
 - [x] Default `npm run demo` path is deterministic dry-run with no provider/phone call.
 - [x] Policy gate is authoritative for execution.
-- [x] Structured outcome validation is enforced.
+- [x] Structured outcome validation is enforced, including runtime rejection of unexpected fields.
 - [x] Evidence and confidence gates prevent unsafe automatic resolution.
 - [x] Idempotency is reserved before provider I/O.
 - [x] Terminal idempotent reuse does not create a duplicate Reflexion finding.
@@ -32,3 +32,10 @@
 ## Submission discipline
 
 This checklist intentionally distinguishes repository verification from external submission actions. External actions are not marked complete merely because the repository contains instructions for them.
+
+## Work log
+
+2026-09-14
+- Tightened runtime outcome validation to enforce the closed schema promised by the architecture and JSON contract.
+- Added a regression test proving unexpected outcome fields are rejected.
+- Updated this checklist so repository verification points to the latest known green CI head before the current validation hardening commits.

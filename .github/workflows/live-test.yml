@@ -1,0 +1,28 @@
+name: Controlled live CALL-E test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      - run: npm run typecheck
+      - name: Execute exactly one controlled CALL-E appointment test
+        env:
+          CALL_E_MODE: live
+          CALLE_API_KEY: ${{ secrets.CALLE_API_KEY }}
+          AEGIS_LIVE_PHONE: ${{ secrets.AEGIS_LIVE_PHONE }}
+          CALLE_REGION: ${{ secrets.CALLE_REGION }}
+          CALLE_LOCALE: pl-PL
+        run: npm run live

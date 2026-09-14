@@ -34,6 +34,7 @@ export interface ObservedEvidence {
   route?: string;
   eta?: string;
   acceptance: "yes" | "no" | "unknown";
+  escalationNeeded?: "urgent" | "normal" | "none" | "unknown";
   confidence: "high" | "medium" | "low" | "unknown";
   evidenceSummary: string;
   evidenceItems?: string[];
@@ -130,6 +131,7 @@ export function reconcileTransaction(transaction: PreparedTransaction, evidence:
   const maxEta = clockToMinutes(transaction.constraints.maxEta);
   if (evidence.providerStatus !== "completed") reasons.push("authoritative CALL-E status is not completed");
   if (evidence.acceptance !== "yes") reasons.push("participant did not positively accept the proposed change");
+  if (evidence.escalationNeeded !== "none") reasons.push("CALL-E requested escalation or did not establish that escalation is unnecessary");
   if (evidence.confidence !== "high") reasons.push("evidence confidence is not high");
   if (evidence.taskCompleted !== true) reasons.push("CALL-E task did not establish a successful terminal completion");
   if (!evidence.evidenceSummary.trim()) reasons.push("evidence summary is missing");
@@ -137,7 +139,7 @@ export function reconcileTransaction(transaction: PreparedTransaction, evidence:
   if (evidence.route !== transaction.constraints.route) reasons.push("observed route does not match prepared route");
   if (observedEta === undefined) reasons.push("observed ETA is missing or invalid");
   else if (maxEta !== undefined && observedEta > maxEta) reasons.push("observed ETA exceeds prepared constraint");
-  if (evidence.providerStatus !== "completed" || evidence.acceptance === "unknown" || evidence.confidence === "unknown" || evidence.route === undefined || observedEta === undefined || evidence.taskCompleted !== true || !evidence.evidenceItems?.length) return { decision: "recover", reasons };
+  if (evidence.providerStatus !== "completed" || evidence.acceptance === "unknown" || evidence.confidence === "unknown" || evidence.route === undefined || observedEta === undefined || evidence.taskCompleted !== true || !evidence.evidenceItems?.length || evidence.escalationNeeded !== "none") return { decision: "recover", reasons };
   if (reasons.length > 0) return { decision: "abort", reasons };
   return { decision: "commit", reasons: ["authoritative terminal evidence matches the prepared transaction"] };
 }

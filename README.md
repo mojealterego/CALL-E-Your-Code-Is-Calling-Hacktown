@@ -8,9 +8,11 @@ The repository implements a bounded control plane around phone execution: policy
 
 `src/cognitive-modules.ts` provides bounded deterministic primitives for working memory, HDC/holographic associative indexing, Shimi-style semantic retrieval with temporal decay, counterfactual causal analysis, capability-scoped MCP gateway boundaries, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution evaluation protocol.
 
-The mutation protocol is proposal-only: sandbox → red-team → formal/property check → benchmark → shadow → approval → release/rollback. It cannot overwrite source, secrets, policy, audit history or the phone executor.
+`src/advanced-cognitive-stack.ts` now contains the requested bounded research-capability layer: CoALA memory control, G-memory, bitemporal graph memory, HDC, RAG 2.0, Graph of Thought, digital genotype, mutation engine/loop, AlphaEvolve/DGM candidate evolution, RSI with rollback, R2/R3-style reasoning primitives, SNN spike encoding, JEPA-style predictive-state scoring, Decision/AB-MCTS, counterfactual scoring, adversarial gating, CEV, GCP authorization, Gödel/ImandraX/SEGPA invariant guards, OESI evidence gating, Agent Devel, self-correction, offline replay/digital sleep, synaptic pruning, curriculum learning, temporal decay, anti-reward-hacking, schema alignment, modality switching, semantic caching, load shedding, resource donation, chaos planning, Pareto selection, retrospective correction, point-in-time recovery, procedural memory and Digital Nexus introspection/modulation.
 
-Research-track names such as CoALA, JEPA, Graph of Thought, R2/R3, SNN, SEGPA, OESI, CEV, ImandraX, full AlphaEvolve/DGM, digital genotype, autonomous RSI, AB-MCTS and proprietary DeepMind architectures are not falsely claimed as implemented learned models.
+The mutation protocol is proposal-only: observe → profile → hypothesis → generate → sandbox → red-team → formal check → benchmark → shadow → approval → release/rollback. It cannot overwrite source, secrets, policy, audit history or the phone executor. The advanced stack is deterministic TypeScript; it does not claim to train JEPA/SNN/LLMs, reproduce proprietary DeepMind systems, or grant autonomous production self-modification.
+
+The complete mapping is maintained in `docs/advanced-capability-matrix.md`.
 
 ## Safety default
 
@@ -34,6 +36,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md` and `SUBMISSION.md`. Ex
 ## Work log — 2026-09-14
 
 - Implemented and tested bounded cognitive-control primitives requested for the architecture.
+- Added the advanced cognitive stack and capability matrix covering CoALA, G-memory, HDC/holographic memory, Shimi index, MCP/GCP boundaries, AlphaEvolve/DGM/genotype/mutation/RSI, R2/R3 reasoning, SNN, JEPA-style prediction, GoT, adversarial/constitutional/formal gates, RAG 2.0, AB-MCTS, offline replay/digital sleep, retrospective correction and point-in-time recovery.
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
 - Persisted the implementation and safety boundaries in repository documentation.

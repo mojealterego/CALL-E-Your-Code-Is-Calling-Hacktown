@@ -22,8 +22,10 @@ jobs:
       CALLE_API_KEY: ${{ secrets.CALLE_API_KEY }}
       CALL_E_MODE: live
       AEGIS_LIVE_PHONE: ${{ secrets.AEGIS_LIVE_PHONE }}
+      AEGIS_LIVE_TEST_ID: ${{ github.run_id }}
       CALLE_REGION: PL
       CALLE_LOCALE: pl-PL
+      CALLE_BASE_URL: https://api.heycall-e.com
     steps:
       - name: Checkout tested feature branch
         uses: actions/checkout@v4
@@ -51,8 +53,12 @@ jobs:
             --data '{}')
           case "$status" in
             400|422) echo "CALL-E authentication accepted; malformed preflight request rejected as expected." ;;
-            401|403) echo "CALL-E rejected CALLE_API_KEY (HTTP $status). Replace the repository secret with a valid CALL-E API key."; exit 1 ;;
+            401|403) echo "CALL-E rejected CALLE_API_KEY."; exit 1 ;;
             *) echo "Unexpected CALL-E preflight HTTP status: $status"; exit 1 ;;
           esac
+      - name: Run regression tests
+        run: npm test
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
       - name: Run exactly one live transaction
         run: npm run live

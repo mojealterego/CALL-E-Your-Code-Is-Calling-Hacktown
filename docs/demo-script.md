@@ -10,7 +10,7 @@ Say:
 
 ## 0:15–0:35 — PREPARE
 
-Show:
+Show the frozen transaction and prepared availability.
 
 ```text
 Transaction: TX-AF-DEMO-0001
@@ -31,7 +31,7 @@ Say:
 
 > "AegisFleet freezes the appointment intent and the allowed replacement slots before the phone call. The voice agent can negotiate naturally, but it cannot invent availability."
 
-## 0:35–1:30 — CALL-E
+## 0:35–1:25 — CALL-E
 
 Run the explicitly configured live path with the authorized test recipient.
 
@@ -109,9 +109,9 @@ Adam: "Nie, jutro nie przyjdę. I właściwie nie chcę już tej wizyty."
 "Rozumiem. W takim razie anuluję tę wizytę. Dziękuję za informację i życzę miłego dnia."
 ```
 
-No reschedule slots are offered after an explicit cancellation.
+No replacement slots are offered after an explicit cancellation.
 
-## 1:30–1:50 — EVIDENCE
+## 1:25–1:45 — EVIDENCE
 
 Show the structured result for the observed branch. For a first visit confirmation it contains:
 
@@ -133,7 +133,7 @@ For a reschedule, the result additionally records the accepted prepared slot. Fo
 
 Point out that the spoken conversation is converted into explicit, auditable evidence.
 
-## 1:50–2:05 — RECONCILE → COMMIT / ABORT
+## 1:45–2:05 — RECONCILE → COMMIT / ABORT
 
 Show:
 
@@ -157,7 +157,7 @@ Say:
 
 > "The voice agent can understand and negotiate. The transaction layer decides what state change is actually authorized."
 
-## 2:05–2:25 — CONFLICT → ABORT
+## 2:05–2:20 — CONFLICT → ABORT
 
 Show a deterministic conflict fixture:
 
@@ -173,7 +173,7 @@ Say:
 
 > "A confident conversation is still not enough if the evidence conflicts with what was prepared."
 
-## 2:25–2:45 — UNKNOWN → RECOVER
+## 2:20–2:35 — UNKNOWN → RECOVER
 
 Show an incomplete result:
 
@@ -188,29 +188,7 @@ Say:
 
 > "Unknown is not success and it is not permission to blindly place another call. Recovery first reconciles the existing call."
 
-## 2:45–3:00 — AUDIT + closing
-
-Show the transaction receipt, system state manifest, and hash-linked audit digest.
-
-Point to:
-
-- transaction ID;
-- CALL-E call ID;
-- patient identity evidence;
-- appointment evidence;
-- selected replacement slot, if any;
-- decision;
-- verification state;
-- trust state;
-- freshness state;
-- previous audit digest;
-- current audit digest.
-
-Say:
-
-> "CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change."
-
-## Evolution assurance insert (optional 15-second overlay)
+## 2:35–2:50 — EVOLUTION ASSURANCE
 
 Show:
 
@@ -233,6 +211,28 @@ EXPLICIT AUTHORIZATION
 Say:
 
 > "A failure does not become a new permission. It becomes a regression case. Improvements must survive replay, challenge and comparison before a human-authorized promotion."
+
+## 2:50–3:00 — RECEIPT + closing
+
+Show the transaction receipt, system state manifest, and hash-linked audit digest.
+
+Point to:
+
+- transaction ID;
+- CALL-E call ID;
+- patient identity evidence;
+- appointment evidence;
+- selected replacement slot, if any;
+- decision;
+- verification state;
+- trust state;
+- freshness state;
+- previous audit digest;
+- current audit digest.
+
+Say:
+
+> "CALL-E tells us what happened on the phone. AegisFleet decides whether the world is allowed to change."
 
 ## Recording safety
 

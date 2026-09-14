@@ -16,6 +16,12 @@ Prepared state is versioned against authoritative readback. A mismatch produces 
 
 Full design: `docs/real-world-assurance-fabric.md`. Regression suite: `tests/assurance-fabric.test.ts`.
 
+## 69-page architecture source ledger
+
+The supplied 69-page material and the preceding design discussion have been consolidated into `docs/69-page-analysis-ledger.md`. It is the requirements source of truth for the recovered architecture decisions: Claim Ledger, Evidence Graph, monitorability, epistemic `UNKNOWN`, stale-state protection, side-effect conservation, compound reasoning placement, Conversation Contract, the complete 34–69 capability series, appointment branching and the competition positioning.
+
+The ledger intentionally separates **DESIGN RECOVERED**, **IMPLEMENTED**, **RUNTIME-INTEGRATED**, **TESTED** and **VERIFIED**. This prevents a capability name or research adapter from being mistaken for a production-authoritative implementation.
+
 ## Implemented cognitive control
 
 `src/cognitive-modules.ts` provides bounded deterministic primitives for working memory, HDC/holographic associative indexing, Shimi-style semantic retrieval with temporal decay, counterfactual causal analysis, capability-scoped MCP gateway boundaries, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and a gated mutation/evolution evaluation protocol.
@@ -97,7 +103,7 @@ cargo check --features zenoh-transport
 
 ## Submission
 
-See `docs/demo-script.md`, `docs/hackathon-checklist.md`, `docs/recovered-material-gap-register.md` and `SUBMISSION.md`. External submission artifacts are never fabricated.
+See `docs/demo-script.md`, `docs/hackathon-checklist.md`, `docs/recovered-material-gap-register.md`, `docs/69-page-analysis-ledger.md` and `SUBMISSION.md`. External submission artifacts are never fabricated.
 
 ## Work log — 2026-09-14
 
@@ -115,7 +121,7 @@ See `docs/demo-script.md`, `docs/hackathon-checklist.md`, `docs/recovered-materi
 - Expanded regression coverage for previously unasserted R2/R3 reasoning, mutation loop, Agent Devel, Pareto, chaos, handshake and cognitive-modulation exports.
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` instead of the historical feature branch.
-- Persisted the implementation and safety boundaries in repository documentation.
+- Persisted the implementation, source-analysis ledger and safety boundaries in repository documentation.
 - Recovered additional submission constraints and unresolved external actions from the supplied preparation material; these are tracked explicitly in `docs/recovered-material-gap-register.md`.
 
 ## License

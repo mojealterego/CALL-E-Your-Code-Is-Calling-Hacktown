@@ -92,38 +92,29 @@ A provider-neutral reusable Agent Skill is prepared at `docs/community-contribut
 │   ├── hackathon-checklist.md
 │   └── security.md
 ├── skills/voice-transaction-coordinator/
-├── src/
-│   ├── bitemporal-memory.ts
-│   ├── cognitive-modules.ts
-│   ├── calle.ts
-│   ├── cli.ts
-│   ├── decision-intelligence.ts
-│   ├── domain.ts
-│   ├── fsm.ts
-│   ├── ledger.ts
-│   ├── orchestrator.ts
-│   ├── policy.ts
-│   ├── red-team.ts
-│   ├── reflexion.ts
-│   ├── simulator.ts
-│   ├── validation.ts
-│   └── webhook.ts
-├── tests/
-│   ├── bitemporal-memory.test.ts
-│   ├── cognitive-modules.test.ts
-│   ├── decision-intelligence.test.ts
-│   ├── ledger.test.ts
-│   ├── orchestrator.test.ts
-│   ├── policy.test.ts
-│   ├── red-team.test.ts
-│   ├── reflexion.test.ts
-│   └── validation.test.ts
-├── .env.example
-├── .gitignore
-├── SUBMISSION.md
-├── package.json
-├── tsconfig.json
-└── vitest.config.ts
+├── src/cognitive-modules.ts
+├── src/bitemporal-memory.ts
+├── src/calle.ts
+├── src/decision-intelligence.ts
+├── src/domain.ts
+├── src/fsm.ts
+├── src/ledger.ts
+├── src/orchestrator.ts
+├── src/policy.ts
+├── src/red-team.ts
+├── src/reflexion.ts
+├── src/simulator.ts
+├── src/validation.ts
+├── src/webhook.ts
+├── tests/cognitive-modules.test.ts
+├── tests/bitemporal-memory.test.ts
+├── tests/decision-intelligence.test.ts
+├── tests/ledger.test.ts
+├── tests/orchestrator.test.ts
+├── tests/policy.test.ts
+├── tests/red-team.test.ts
+├── tests/reflexion.test.ts
+└── tests/validation.test.ts
 ```
 
 ## Production hardening backlog
@@ -147,7 +138,7 @@ A provider-neutral reusable Agent Skill is prepared at `docs/community-contribut
 - Implemented and tested bounded cognitive-control primitives requested for the architecture.
 - Fixed strict TypeScript indexed-access validation exposed by CI.
 - Corrected the live CALL-E workflow to execute current `main` rather than the historical feature branch.
-- Persisted the implementation and boundaries in `README.md` and `docs/cognitive-control-plane.md`.
+- Persisted the implementation and safety boundaries in the README and cognitive-control-plane documentation.
 - Kept DGM/AlphaEvolve/RSI mutation proposal-only: no autonomous source mutation, production hot-swap, credential access or phone-executor self-modification.
 
 ## License

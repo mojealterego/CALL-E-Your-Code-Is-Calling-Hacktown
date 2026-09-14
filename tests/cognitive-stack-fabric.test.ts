@@ -11,14 +11,19 @@ const fabric: MemoryFabric = {
   semantic: [memory("s1", "semantic", "first visit registration identity document")],
   procedural: [memory("p1", "procedural", "how to conduct receptionist conversation")],
   holographic: [memory("h1", "holographic", "Adam Pawlak appointment slot evidence")],
+  bitemporal: [
+    { ...memory("b1", "episodic", "appointment state", "2026-09-13T00:00:00.000Z"), version: 1, source: "fixture", confidence: 1, authority: "authoritative", verified: true },
+  ],
+  graph: [{ from: "h1", to: "e1", relation: "related-to" }],
 };
 
 describe("memory and assurance fabric", () => {
   it("keeps semantic, episodic, temporal and graph retrieval distinct", () => {
     expect(semanticRetrieve("first visit", fabric)[0]?.id).toBe("s1");
     expect(semanticRetrieve("first visit", fabric)).toHaveLength(1);
-    expect(graphRetrieve("Adam Pawlak", fabric)[0]?.id).toBe("e1");
-    expect(temporalRetrieve("2026-09-13T12:00:00.000Z", fabric).length).toBe(5);
+    expect(graphRetrieve("Adam Pawlak", fabric)[0]?.id).toBe("h1");
+    expect(graphRetrieve("Adam Pawlak", fabric)).toContainEqual(fabric.episodic[0]);
+    expect(temporalRetrieve("2026-09-13T12:00:00.000Z", fabric)).toHaveLength(1);
   });
 
   it("attaches provenance and forbids memory authorization", () => {
@@ -43,9 +48,7 @@ describe("memory and assurance fabric", () => {
   });
 
   it("uses the temporal sensor only as a recovery signal", () => {
-    const result = detectTemporalAnomaly([
-      { timestampMs: 0, value: 1 }, { timestampMs: 100, value: 1 }, { timestampMs: 200, value: 1 }, { timestampMs: 1200, value: 1 },
-    ], 0.2);
+    const result = detectTemporalAnomaly([{ timestampMs: 0, value: 1 }, { timestampMs: 100, value: 1 }, { timestampMs: 200, value: 1 }, { timestampMs: 1200, value: 1 }], 0.2);
     expect(result.anomalous).toBe(true);
     expect(anomalyRequiresRecovery(result)).toBe(true);
   });

@@ -7,8 +7,8 @@
 - [x] Decision Intelligence, Decision Cycle, Reflexion and retrospective correction.
 - [x] Adversarial gating and deterministic synthetic red-team coverage.
 - [x] Bounded cognitive modules: working memory, HDC/holographic indexing, semantic retrieval, counterfactual analysis, MCP capability scoping, temporal decay, Pareto selection, load shedding, prompt compression, hard-negative mining, trust regulation and gated mutation evaluation.
-- [x] Cognitive regression tests added; the first CI run reached 12 test files / 40 passing tests.
-- [x] Strict TypeScript indexed-access defect found by CI has been fixed in the current implementation.
+- [x] Cognitive regression tests added.
+- [x] Strict TypeScript indexed-access defect found by CI has been fixed in the implementation.
 - [x] Default `npm run demo` remains deterministic dry-run with no provider/phone call.
 - [x] Live CALL-E workflow explicitly authorizes one test call and checks out current `main`.
 - [x] Research-track concepts are separated from claims of actual learned/proprietary model implementations.

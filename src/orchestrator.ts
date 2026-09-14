@@ -4,6 +4,8 @@ import { AuditLedger } from "./ledger.js";
 import { simulateCall } from "./simulator.js";
 import { executeWithCalle } from "./calle.js";
 import { validateOutcome } from "./validation.js";
+import { BitemporalMemoryStore } from "./bitemporal-memory.js";
+import { reflectOnExecution, storeReflexionFinding, type ReflexionFinding } from "./reflexion.js";
 
 function failureOutcome(message: string) {
   return validateOutcome({
@@ -17,14 +19,19 @@ function failureOutcome(message: string) {
 
 export async function runIncident(
   incident: Incident,
-  options: { live: boolean; ledger?: AuditLedger } = { live: false },
+  options: {
+    live: boolean;
+    ledger?: AuditLedger;
+    reflexionMemory?: BitemporalMemoryStore<ReflexionFinding>;
+  } = { live: false },
 ) {
   const ledger = options.ledger ?? new AuditLedger();
+  const reflexionMemory = options.reflexionMemory ?? new BitemporalMemoryStore<ReflexionFinding>();
   const operationKey = `incident:${incident.id}:call:${incident.vehicleId}`;
   const reserved = ledger.reserve(operationKey);
 
   if (reserved.state !== "detected") {
-    return { record: reserved, reused: true, outcome: reserved.outcome };
+    return { record: reserved, reused: true, outcome: reserved.outcome, reflexion: undefined };
   }
 
   const policy = validateIncident(incident, options.live);
@@ -32,7 +39,15 @@ export async function runIncident(
     const record = ledger.transition(operationKey, "escalated", {
       outcome: failureOutcome(policy.reasons.join("; ")),
     });
-    return { record, reused: false, outcome: record.outcome };
+    const reflexion = storeReflexionFinding(
+      reflexionMemory,
+      reflectOnExecution(incident, operationKey, {
+        state: "escalated",
+        outcome: record.outcome,
+        policyPassed: false,
+      }),
+    );
+    return { record, reused: false, outcome: record.outcome, reflexion };
   }
 
   ledger.transition(operationKey, "validated");
@@ -49,12 +64,29 @@ export async function runIncident(
       canResolve(outcome) ? "resolved" : "escalated",
       { ...(raw.callId ? { callId: raw.callId } : {}), outcome },
     );
-    return { record, reused: false, outcome };
+    const reflexion = storeReflexionFinding(
+      reflexionMemory,
+      reflectOnExecution(incident, operationKey, {
+        state: record.state,
+        outcome,
+        policyPassed: true,
+      }),
+    );
+    return { record, reused: false, outcome, reflexion };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown CALL-E execution failure";
     const record = ledger.transition(operationKey, "escalated", {
       outcome: failureOutcome(message),
     });
-    return { record, reused: false, outcome: record.outcome };
+    const reflexion = storeReflexionFinding(
+      reflexionMemory,
+      reflectOnExecution(incident, operationKey, {
+        state: "escalated",
+        outcome: record.outcome,
+        error: message,
+        policyPassed: true,
+      }),
+    );
+    return { record, reused: false, outcome: record.outcome, reflexion };
   }
 }
